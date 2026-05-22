@@ -6,6 +6,7 @@
   import Sidebar from "./Sidebar.svelte";
   import TerminalPane from "./TerminalPane.svelte";
   import { TerminalSquare, Menu, Wifi, WifiOff } from "@lucide/svelte";
+  import type { ServiceStats } from "../lib/types";
 
   let services = $state<ServiceState[]>([]);
   let selectedId = $state("shell");
@@ -13,6 +14,7 @@
   let btop = $state(false);
   let view = $state<PaneView>({ type: "terminal" });
   let sidebarOpen = $state(false);
+  let stats = $state<Record<string, ServiceStats>>({});
 
   let terminalIds = $derived([
     "shell",
@@ -33,6 +35,7 @@
   onMount(() => {
     const removeMsg = onMessage((msg) => {
       if (msg.type === "state") services = msg.services;
+      else if (msg.type === "stats") stats = msg.stats;
     });
     const removeOpen = onOpen(() => { connected = true; send({ type: "get-state" }); });
     const removeClose = onClose(() => { connected = false; });
@@ -76,6 +79,7 @@
         {selectedId}
         {connected}
         {btop}
+        {stats}
         onselect={select}
         {openLogs}
       />

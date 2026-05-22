@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { IncomingMessage } from "http";
 import * as pty from "node-pty";
 import * as os from "os";
+import pidusage from "pidusage";
 import { verifyToken } from "../middleware/auth";
 import {
   getServiceStates,
@@ -17,10 +18,37 @@ import {
   resizeBtop,
   subscribeToBtop,
   unsubscribeFromBtop,
+  getRunningPids,
 } from "../services/serviceManager";
-import { WsMessage } from "../../../shared/types";
+import { ServiceStats, WsMessage } from "../../../shared/types";
 
 const connectedClients = new Set<WebSocket>();
+
+const STATS_INTERVAL_MS = 2000;
+
+async function broadcastStats() {
+  const pids = getRunningPids();
+  if (pids.size === 0 || connectedClients.size === 0) return;
+
+  try {
+    const pidArray = Array.from(pids.values());
+    const usage = await pidusage(pidArray);
+    const stats: Record<string, ServiceStats> = {};
+    for (const [id, pid] of pids) {
+      const u = usage[pid];
+      if (u) stats[id] = { cpu: u.cpu, mem: u.memory };
+    }
+    const msg: WsMessage = { type: "stats", stats };
+    const encoded = JSON.stringify(msg);
+    for (const ws of connectedClients) {
+      if (ws.readyState === WebSocket.OPEN) ws.send(encoded);
+    }
+  } catch {
+    // ignore pidusage errors (process may have exited between sample and read)
+  }
+}
+
+setInterval(broadcastStats, STATS_INTERVAL_MS);
 
 interface ShellSession {
   pty: pty.IPty;

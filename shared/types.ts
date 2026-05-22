@@ -15,10 +15,16 @@ export interface LogEntry {
   mtime: number;
 }
 
+export interface ServiceStats {
+  cpu: number;   // percent, 0-100
+  mem: number;   // bytes
+}
+
 export type WsMessage =
   | { type: "input"; id: string; data: string }
   | { type: "resize"; id: string; cols: number; rows: number }
   | { type: "output"; id: string; data: string }
   | { type: "state"; services: ServiceState[] }
+  | { type: "stats"; stats: Record<string, ServiceStats> }
   | { type: "get-scrollback"; id: string }
   | { type: "get-state" };

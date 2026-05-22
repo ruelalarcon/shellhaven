@@ -354,3 +354,13 @@ export function subscribeToOutput(id: string, listener: (data: string) => void) 
 export function unsubscribeFromOutput(id: string, listener: (data: string) => void) {
   services.get(id)?.outputListeners.delete(listener);
 }
+
+export function getRunningPids(): Map<string, number> {
+  const pids = new Map<string, number>();
+  for (const [id, entry] of services) {
+    if (entry.status === "running" && entry.pty) {
+      pids.set(id, entry.pty.pid);
+    }
+  }
+  return pids;
+}

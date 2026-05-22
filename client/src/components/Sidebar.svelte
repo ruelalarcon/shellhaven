@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ServiceState } from "../lib/types";
+  import type { ServiceState, ServiceStats } from "../lib/types";
   import ServiceItem from "./ServiceItem.svelte";
   import {
     TerminalSquare,
@@ -16,14 +16,21 @@
   } from "@lucide/svelte";
   import { push } from "svelte-spa-router";
 
-  let { services, selectedId, connected, btop, onselect, openLogs }: {
+  let { services, selectedId, connected, btop, stats, onselect, openLogs }: {
     services: ServiceState[];
     selectedId: string;
     connected: boolean;
     btop: boolean;
+    stats: Record<string, ServiceStats>;
     onselect: (id: string) => void;
     openLogs: (id: string) => void;
   } = $props();
+
+  function formatMem(bytes: number): string {
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}K`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}M`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)}G`;
+  }
 
   let query = $state("");
   let collapsedGroups = $state(new Set<string>());
@@ -117,6 +124,7 @@
         service={{ id: "shell", status: "running", restartPolicy: "always" }}
         selected={selectedId === "shell"}
         onclick={() => onselect("shell")}
+        stats={undefined}
       />
     {/if}
 
@@ -141,6 +149,7 @@
             service={svc}
             selected={selectedId === svc.id}
             onclick={() => onselect(svc.id)}
+            stats={stats[svc.id]}
           />
         {/each}
       {:else}
@@ -164,6 +173,7 @@
                   service={svc}
                   selected={selectedId === svc.id}
                   onclick={() => onselect(svc.id)}
+                  stats={stats[svc.id]}
                 />
               {/each}
             </div>
@@ -184,6 +194,20 @@
         <ChevronRight size={10} />
         {selectedId}
       </div>
+      {#if stats[selectedId]}
+        {@const s = stats[selectedId]}
+        <div class="stats-row">
+          <span class="stat-item">
+            <span class="stat-label">cpu</span>
+            <span class="stat-value">{s.cpu.toFixed(1)}%</span>
+          </span>
+          <span class="stat-divider"></span>
+          <span class="stat-item">
+            <span class="stat-label">mem</span>
+            <span class="stat-value">{formatMem(s.mem)}</span>
+          </span>
+        </div>
+      {/if}
       <div class="control-buttons">
         <button class="ctrl-btn logs" onclick={() => openLogs(selectedId)}>
           <ScrollText size={12} /><span>logs</span>
@@ -397,6 +421,42 @@
     background: #0f0f13;
     border-top: 1px solid #1a1a20;
     padding: 8px 0 6px;
+    flex-shrink: 0;
+  }
+
+  .stats-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 14px 6px;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .stat-label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #3d3d52;
+  }
+
+  .stat-value {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #6b7280;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 10px;
+    background: #1e1e28;
+    margin: 0 10px;
     flex-shrink: 0;
   }
 

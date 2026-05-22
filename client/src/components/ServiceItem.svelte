@@ -1,14 +1,21 @@
 <script lang="ts">
-  import type { ServiceState } from "../lib/types";
+  import type { ServiceState, ServiceStats } from "../lib/types";
   import { Terminal, Circle } from "@lucide/svelte";
 
-  let { service, selected, onclick }: {
+  let { service, selected, onclick, stats }: {
     service: ServiceState;
     selected: boolean;
     onclick: () => void;
+    stats: ServiceStats | undefined;
   } = $props();
 
   let isShell = $derived(service.id === "shell");
+
+  function formatMem(bytes: number): string {
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}K`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}M`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)}G`;
+  }
 </script>
 
 <button class="item" class:selected class:running={service.status === "running"} class:crashed={service.status === "crashed"} {onclick}>
@@ -21,7 +28,14 @@
   </span>
   <span class="name">{service.id}</span>
   {#if !isShell}
-    <span class="badge {service.status}">{service.status}</span>
+    {#if stats && service.status === "running"}
+      <span class="inline-stats">
+        <span class="inline-cpu">{stats.cpu.toFixed(0)}%</span>
+        <span class="inline-mem">{formatMem(stats.mem)}</span>
+      </span>
+    {:else}
+      <span class="badge {service.status}">{service.status}</span>
+    {/if}
   {/if}
 </button>
 
@@ -94,4 +108,36 @@
   .badge.running { background: #0d2018; color: #5af78e; }
   .badge.crashed { background: #200d0d; color: #ff6b6b; }
   .badge.stopped { background: #1a1a22; color: #4a4a62; }
+
+  .inline-stats {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  .inline-cpu {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #3d3d52;
+    font-variant-numeric: tabular-nums;
+    min-width: 28px;
+    text-align: right;
+    transition: color 0.3s;
+  }
+
+  .item:hover .inline-cpu,
+  .item.selected .inline-cpu { color: #6b7280; }
+
+  .inline-mem {
+    font-size: 0.6rem;
+    color: #2e2e42;
+    font-variant-numeric: tabular-nums;
+    min-width: 32px;
+    text-align: right;
+    transition: color 0.3s;
+  }
+
+  .item:hover .inline-mem,
+  .item.selected .inline-mem { color: #4a4a5a; }
 </style>
