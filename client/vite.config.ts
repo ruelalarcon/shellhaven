@@ -9,17 +9,8 @@ export default defineConfig({
       "~shared": path.resolve(__dirname, "../shared"),
     },
   },
-  server: {
-    proxy: {
-      "/api": "http://127.0.0.1:7456",
-      "/ws": {
-        target: "ws://127.0.0.1:7456",
-        ws: true,
-        rewriteWsOrigin: true,
-      },
-    },
-  },
   build: {
     outDir: "dist",
+    watch: {},
   },
 });

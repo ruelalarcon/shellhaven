@@ -94,7 +94,12 @@
   });
 
   $effect(() => {
-    if (visible && fitAddon) setTimeout(fitAndResize, 10);
+    if (visible && fitAddon) {
+      setTimeout(() => {
+        fitAndResize();
+        term?.scrollToBottom();
+      }, 10);
+    }
   });
 
   function fitAndResize() {
