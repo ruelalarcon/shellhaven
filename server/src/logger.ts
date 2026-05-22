@@ -37,7 +37,7 @@ function formatContext(ctx?: string): string {
   return isTTY() ? ` ${DIM}[${ctx}]${RESET} ` : ` [${ctx}] `;
 }
 
-let minLevel: LogLevel = (process.env.LOG_LEVEL as LogLevel | undefined) ?? "info";
+let minLevel: LogLevel = (process.env.SHELLHAVEN_LOG_LEVEL as LogLevel | undefined) ?? "info";
 
 export function setLogLevel(level: LogLevel) {
   minLevel = level;

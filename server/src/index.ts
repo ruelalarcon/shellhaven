@@ -37,8 +37,8 @@ app.get("*", (req, res) => {
 setupWebSocket(wss);
 initShells();
 
-const PORT = parseInt(process.env.PORT || "7456", 10);
-const HOST = process.env.HOST || "localhost";
+const PORT = parseInt(process.env.SHELLHAVEN_PORT || "7456", 10);
+const HOST = process.env.SHELLHAVEN_HOST || "localhost";
 
 server.listen(PORT, HOST, () => {
   log.info(`shellhaven running at http://${HOST}:${PORT}`);

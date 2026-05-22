@@ -9,8 +9,8 @@ Restart=always
 User=you
 Environment=NODE_ENV=production
 Environment=HOME=/home/you
-Environment=PORT=7456
-Environment=HOST=localhost
+Environment=SHELLHAVEN_PORT=7456
+Environment=SHELLHAVEN_HOST=localhost
 
 [Install]
 WantedBy=multi-user.target

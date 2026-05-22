@@ -260,7 +260,7 @@ shellhaven's own log output goes to **stdout/stderr** with timestamps, log level
 
 ANSI colors are used when stdout is a TTY and stripped automatically when output is piped or redirected (e.g. captured by systemd journal).
 
-**Log level** is controlled by the `LOG_LEVEL` environment variable:
+**Log level** is controlled by the `SHELLHAVEN_LOG_LEVEL` environment variable:
 
 | Level | What you see |
 |---|---|
@@ -270,7 +270,7 @@ ANSI colors are used when stdout is a TTY and stripped automatically when output
 | `debug` | Everything, including log rotation and pruning details |
 
 ```bash
-LOG_LEVEL=debug npm start
+SHELLHAVEN_LOG_LEVEL=debug npm start
 ```
 
 ---
@@ -329,10 +329,10 @@ npm start
 The server port and host are configurable via environment variables:
 
 ```bash
-PORT=7456 HOST=0.0.0.0 npm start
+SHELLHAVEN_PORT=7456 SHELLHAVEN_HOST=0.0.0.0 npm start
 ```
 
-Set `HOST=0.0.0.0` only if you are **not** using a reverse proxy and need the port directly accessible. If you are using nginx (recommended), keep `HOST=localhost` and let nginx handle public traffic.
+Set `SHELLHAVEN_HOST=0.0.0.0` only if you are **not** using a reverse proxy and need the port directly accessible. If you are using nginx (recommended), keep `SHELLHAVEN_HOST=localhost` and let nginx handle public traffic.
 
 ---
 
@@ -361,8 +361,8 @@ Restart=always
 User=you
 Environment=NODE_ENV=production
 Environment=HOME=/home/you
-Environment=PORT=7456
-Environment=HOST=localhost
+Environment=SHELLHAVEN_PORT=7456
+Environment=SHELLHAVEN_HOST=localhost
 
 [Install]
 WantedBy=multi-user.target
@@ -506,7 +506,7 @@ If you want to expose shellhaven directly without a reverse proxy, bind it to al
 
 ```bash
 # In your systemd service or shell:
-HOST=0.0.0.0 PORT=7456 npm start
+SHELLHAVEN_HOST=0.0.0.0 SHELLHAVEN_PORT=7456 npm start
 
 # Open the port in your firewall:
 sudo ufw allow 7456/tcp
@@ -538,8 +538,8 @@ To type-check the client:
 cd client && npm run check
 ```
 
-The `LOG_LEVEL` environment variable controls server log verbosity. Set it to `debug` to see detailed output including log rotation and pruning:
+The `SHELLHAVEN_LOG_LEVEL` environment variable controls server log verbosity. Set it to `debug` to see detailed output including log rotation and pruning:
 
 ```bash
-LOG_LEVEL=debug npm run dev:server
+SHELLHAVEN_LOG_LEVEL=debug npm run dev:server
 ```
