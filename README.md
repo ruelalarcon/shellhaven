@@ -412,6 +412,14 @@ server {
     listen 80;
     server_name your.domain.com;
 
+    # Required so browsers accept the font files
+    location ~* \.ttf$ {
+        proxy_pass http://localhost:7456;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        add_header Content-Type font/ttf;
+    }
+
     location / {
         proxy_pass http://localhost:7456;
         proxy_http_version 1.1;
