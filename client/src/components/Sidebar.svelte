@@ -11,13 +11,15 @@
     WifiOff,
     ChevronRight,
     Search,
+    Activity,
   } from "@lucide/svelte";
   import { push } from "svelte-spa-router";
 
-  let { services, selectedId, connected, onselect }: {
+  let { services, selectedId, connected, btop, onselect }: {
     services: ServiceState[];
     selectedId: string;
     connected: boolean;
+    btop: boolean;
     onselect: (id: string) => void;
   } = $props();
 
@@ -66,9 +68,12 @@
 
   let selectedService = $derived(services.find((s) => s.id === selectedId));
 
-  // Whether shell matches the search
   let shellVisible = $derived(
     !query.trim() || "shell".includes(query.trim().toLowerCase())
+  );
+
+  let btopVisible = $derived(
+    btop && (!query.trim() || "btop".includes(query.trim().toLowerCase()))
   );
 </script>
 
@@ -111,6 +116,18 @@
         selected={selectedId === "shell"}
         onclick={() => onselect("shell")}
       />
+    {/if}
+
+    <!-- btop if available -->
+    {#if btopVisible}
+      <button
+        class="item btop-item"
+        class:selected={selectedId === "btop"}
+        onclick={() => onselect("btop")}
+      >
+        <span class="icon-wrap"><Activity size={13} /></span>
+        <span class="name">btop</span>
+      </button>
     {/if}
 
     <!-- Grouped services -->
@@ -330,6 +347,44 @@
     padding: 12px 14px;
     font-size: 0.75rem;
     color: #3a3a52;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    background: none;
+    border: none;
+    border-left: 2px solid transparent;
+    color: #4a4a62;
+    cursor: pointer;
+    padding: 6px 12px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    text-align: left;
+    transition: all 0.12s;
+    line-height: 1;
+  }
+
+  .item:hover { background: #16161c; color: #8b95a8; border-left-color: #2e2e3e; }
+  .item.selected { background: #15151c; color: #c9d1e0; border-left-color: #c9d1e0; }
+
+  .icon-wrap {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: 16px;
+    justify-content: center;
+  }
+
+  .item.selected .icon-wrap { color: #c9d1e0; }
+
+  .name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* Controls */

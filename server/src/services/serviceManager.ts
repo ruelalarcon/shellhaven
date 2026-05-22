@@ -2,6 +2,7 @@ import * as pty from "node-pty";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import { execSync } from "child_process";
 import { RestartPolicy, ServiceState, ServiceStatus } from "../../../shared/types";
 
 const SERVICES_DIR = path.join(os.homedir(), "services");
@@ -21,6 +22,66 @@ interface ServiceEntry {
 }
 
 const services = new Map<string, ServiceEntry>();
+
+interface BtopSession {
+  pty: pty.IPty;
+  scrollback: string;
+  outputListeners: Set<(data: string) => void>;
+}
+
+let btopSession: BtopSession | null = null;
+
+export function isBtopAvailable(): boolean {
+  try { execSync("which btop", { stdio: "ignore" }); return true; } catch { return false; }
+}
+
+export function initBtop() {
+  if (!isBtopAvailable()) return;
+
+  const proc = pty.spawn("btop", [], {
+    name: "xterm-256color",
+    cols: 220,
+    rows: 50,
+    cwd: os.homedir(),
+    env: process.env as { [key: string]: string },
+  });
+
+  btopSession = { pty: proc, scrollback: "", outputListeners: new Set() };
+
+  proc.onData((data) => {
+    if (!btopSession) return;
+    btopSession.scrollback += data;
+    if (btopSession.scrollback.length > SCROLLBACK_LIMIT) {
+      btopSession.scrollback = btopSession.scrollback.slice(-SCROLLBACK_LIMIT);
+    }
+    for (const listener of btopSession.outputListeners) listener(data);
+  });
+
+  proc.onExit(() => {
+    btopSession = null;
+    setTimeout(initBtop, 1000);
+  });
+}
+
+export function getBtopScrollback(): string {
+  return btopSession?.scrollback ?? "";
+}
+
+export function writeToBtop(data: string) {
+  btopSession?.pty.write(data);
+}
+
+export function resizeBtop(cols: number, rows: number) {
+  btopSession?.pty.resize(cols, rows);
+}
+
+export function subscribeToBtop(listener: (data: string) => void) {
+  btopSession?.outputListeners.add(listener);
+}
+
+export function unsubscribeFromBtop(listener: (data: string) => void) {
+  btopSession?.outputListeners.delete(listener);
+}
 
 let onStateChange: (() => void) | null = null;
 
@@ -118,6 +179,7 @@ function spawnService(entry: ServiceEntry) {
 }
 
 export function initServices() {
+  initBtop();
   fs.mkdirSync(LOGS_DIR, { recursive: true });
 
   if (!fs.existsSync(SERVICES_DIR)) {

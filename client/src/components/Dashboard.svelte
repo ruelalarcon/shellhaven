@@ -9,8 +9,13 @@
   let services = $state<ServiceState[]>([]);
   let selectedId = $state("shell");
   let connected = $state(false);
+  let btop = $state(false);
 
-  let terminalIds = $derived(["shell", ...services.map((s) => s.id)]);
+  let terminalIds = $derived([
+    "shell",
+    ...(btop ? ["btop"] : []),
+    ...services.map((s) => s.id),
+  ]);
 
   onMount(() => {
     const removeMsg = onMessage((msg) => {
@@ -21,9 +26,10 @@
 
     fetch("/api/status")
       .then((r) => r.json())
-      .then(({ configured, authenticated }) => {
-        if (!configured) push("/setup");
-        else if (!authenticated) push("/login");
+      .then((data) => {
+        if (!data.configured) { push("/setup"); return; }
+        if (!data.authenticated) { push("/login"); return; }
+        btop = data.btop ?? false;
       });
 
     return () => { removeMsg(); removeOpen(); removeClose(); };
@@ -31,7 +37,7 @@
 </script>
 
 <div class="dashboard">
-  <Sidebar {services} {selectedId} {connected} onselect={(id) => (selectedId = id)} />
+  <Sidebar {services} {selectedId} {connected} {btop} onselect={(id) => (selectedId = id)} />
   <TerminalPane ids={terminalIds} {selectedId} {services} />
 </div>
 

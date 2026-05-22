@@ -5,6 +5,7 @@ import crypto from "crypto";
 import path from "path";
 import { getConfig, saveConfig } from "../config";
 import { verifyToken } from "../middleware/auth";
+import { isBtopAvailable } from "../services/serviceManager";
 
 const router = Router();
 
@@ -12,7 +13,7 @@ router.get("/api/status", (req: Request, res: Response) => {
   const config = getConfig();
   const configured = config !== null;
   const authenticated = configured && verifyToken(req.cookies?.td_session ?? "");
-  res.json({ configured, authenticated });
+  res.json({ configured, authenticated, btop: isBtopAvailable() });
 });
 
 const spa = (res: Response) =>

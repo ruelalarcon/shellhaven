@@ -1,7 +1,7 @@
 <script lang="ts">
   import Terminal from "./Terminal.svelte";
   import type { ServiceState } from "../lib/types";
-  import { Trash2, Terminal as TerminalIcon, Circle, Cpu } from "@lucide/svelte";
+  import { Trash2, Terminal as TerminalIcon, Circle, Cpu, Activity } from "@lucide/svelte";
 
   let { ids, selectedId, services }: {
     ids: string[];
@@ -29,12 +29,14 @@
       <span class="toolbar-icon">
         {#if selectedId === "shell"}
           <TerminalIcon size={14} />
+        {:else if selectedId === "btop"}
+          <Activity size={14} />
         {:else}
           <Cpu size={14} />
         {/if}
       </span>
       <span class="terminal-name">{selectedId}</span>
-      {#if selectedId !== "shell"}
+      {#if selectedId !== "shell" && selectedId !== "btop"}
         {@const status = getStatus(selectedId)}
         {@const policy = getRestartPolicy(selectedId)}
         <span class="status-pill {status}">

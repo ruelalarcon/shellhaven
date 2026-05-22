@@ -11,6 +11,12 @@ import {
   subscribeToOutput,
   unsubscribeFromOutput,
   setStateChangeCallback,
+  isBtopAvailable,
+  getBtopScrollback,
+  writeToBtop,
+  resizeBtop,
+  subscribeToBtop,
+  unsubscribeFromBtop,
 } from "../services/serviceManager";
 import { WsMessage } from "../../../shared/types";
 
@@ -53,6 +59,12 @@ export function setupWebSocket(wss: WebSocketServer) {
       subscribeToOutput(svc.id, handler);
     }
 
+    let btopHandler: ((data: string) => void) | null = null;
+    if (isBtopAvailable()) {
+      btopHandler = (data: string) => send(ws, { type: "output", id: "btop", data });
+      subscribeToBtop(btopHandler);
+    }
+
     send(ws, { type: "state", services: getServiceStates() });
 
     ws.on("message", (raw) => {
@@ -66,17 +78,21 @@ export function setupWebSocket(wss: WebSocketServer) {
       if (msg.type === "input") {
         if (msg.id === "shell") {
           shell.pty.write(msg.data);
+        } else if (msg.id === "btop") {
+          writeToBtop(msg.data);
         } else {
           writeToService(msg.id, msg.data);
         }
       } else if (msg.type === "resize") {
         if (msg.id === "shell") {
           shell.pty.resize(msg.cols, msg.rows);
+        } else if (msg.id === "btop") {
+          resizeBtop(msg.cols, msg.rows);
         } else {
           resizeService(msg.id, msg.cols, msg.rows);
         }
       } else if (msg.type === "get-scrollback") {
-        const scrollback = getScrollback(msg.id);
+        const scrollback = msg.id === "btop" ? getBtopScrollback() : getScrollback(msg.id);
         if (scrollback) send(ws, { type: "output", id: msg.id, data: scrollback });
       } else if (msg.type === "get-state") {
         send(ws, { type: "state", services: getServiceStates() });
@@ -89,6 +105,7 @@ export function setupWebSocket(wss: WebSocketServer) {
       for (const [id, handler] of outputHandlers) {
         unsubscribeFromOutput(id, handler);
       }
+      if (btopHandler) unsubscribeFromBtop(btopHandler);
     });
   });
 }
