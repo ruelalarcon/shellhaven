@@ -1,18 +1,14 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import type { ServiceState } from "../lib/types";
 
-  let {
-    service,
-    selected,
-    onclick,
-  }: {
-    service: ServiceState;
-    selected: boolean;
-    onclick: () => void;
-  } = $props();
+  export let service: ServiceState;
+  export let selected: boolean;
+
+  const dispatch = createEventDispatcher<{ click: void }>();
 </script>
 
-<button class="service-item" class:selected onclick={onclick}>
+<button class="service-item" class:selected on:click={() => dispatch("click")}>
   <span class="dot" class:running={service.status === "running"} class:crashed={service.status === "crashed"}></span>
   <span class="name">{service.id}</span>
 </button>

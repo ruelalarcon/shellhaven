@@ -5,9 +5,11 @@
   import Sidebar from "./components/Sidebar.svelte";
   import TerminalPane from "./components/TerminalPane.svelte";
 
-  let services = $state<ServiceState[]>([]);
-  let selectedId = $state("shell");
-  let connected = $state(false);
+  let services: ServiceState[] = [];
+  let selectedId: string = "shell";
+  let connected: boolean = false;
+
+  $: terminalIds = ["shell", ...services.map((s) => s.id)];
 
   onMount(() => {
     const removeMsg = onMessage((msg) => {
@@ -19,15 +21,13 @@
     const removeClose = onClose(() => { connected = false; });
     return () => { removeMsg(); removeOpen(); removeClose(); };
   });
-
-  let terminalIds = $derived(["shell", ...services.map((s) => s.id)]);
 </script>
 
 <div class="app">
   {#if !connected}
     <div class="connecting">connecting…</div>
   {/if}
-  <Sidebar {services} {selectedId} onselect={(id) => (selectedId = id)} />
+  <Sidebar {services} {selectedId} on:select={(e) => (selectedId = e.detail)} />
   <TerminalPane ids={terminalIds} {selectedId} />
 </div>
 

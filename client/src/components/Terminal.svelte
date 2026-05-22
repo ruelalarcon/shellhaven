@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, afterUpdate } from "svelte";
   import { Terminal as XTerm } from "@xterm/xterm";
   import { FitAddon } from "@xterm/addon-fit";
   import { send, onMessage, onOpen } from "../lib/ws";
   import "@xterm/xterm/css/xterm.css";
 
-  let { id, visible }: { id: string; visible: boolean } = $props();
+  export let id: string;
+  export let visible: boolean;
 
   let container: HTMLDivElement;
   let term: XTerm;
@@ -44,7 +45,7 @@
     term.open(container);
     fitAddon.fit();
 
-    term.onData((data) => {
+    term.onData((data: string) => {
       send({ type: "input", id, data });
     });
 
@@ -71,6 +72,12 @@
     };
   });
 
+  afterUpdate(() => {
+    if (visible && fitAddon) {
+      setTimeout(fitAndResize, 10);
+    }
+  });
+
   function fitAndResize() {
     if (!fitAddon || !term) return;
     fitAddon.fit();
@@ -80,12 +87,6 @@
   export function clear() {
     term?.clear();
   }
-
-  $effect(() => {
-    if (visible && fitAddon) {
-      setTimeout(fitAndResize, 10);
-    }
-  });
 </script>
 
 <div class="terminal-wrapper" bind:this={container}></div>

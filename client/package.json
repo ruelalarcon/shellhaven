@@ -14,9 +14,9 @@
     "@xterm/xterm": "^5.5.0"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^3.1.2",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0",
     "svelte": "^5.16.0",
-    "svelte-check": "^3.8.6",
+    "svelte-check": "^4.0.0",
     "typescript": "^5.7.2",
     "vite": "^5.4.11"
   }

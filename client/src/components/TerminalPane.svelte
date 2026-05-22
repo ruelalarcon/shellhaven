@@ -1,21 +1,20 @@
 <script lang="ts">
   import Terminal from "./Terminal.svelte";
 
-  let {
-    ids,
-    selectedId,
-  }: {
-    ids: string[];
-    selectedId: string;
-  } = $props();
+  export let ids: string[];
+  export let selectedId: string;
 
-  let termRefs = $state<Record<string, { clear: () => void }>>({});
+  let termRefs: Record<string, Terminal> = {};
+
+  function clear() {
+    termRefs[selectedId]?.clear();
+  }
 </script>
 
 <div class="pane">
   <div class="toolbar">
     <span class="label">{selectedId}</span>
-    <button onclick={() => termRefs[selectedId]?.clear()}>Clear</button>
+    <button on:click={clear}>Clear</button>
   </div>
   <div class="terminal-area">
     {#each ids as id (id)}
