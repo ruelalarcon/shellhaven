@@ -51,7 +51,7 @@ router.post("/login", async (req: Request, res: Response) => {
     return;
   }
   const token = jwt.sign({}, config.jwtSecret, { expiresIn: "7d" });
-  res.cookie("token", token, {
+  res.cookie("td_session", token, {
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     sameSite: "strict",
@@ -60,7 +60,7 @@ router.post("/login", async (req: Request, res: Response) => {
 });
 
 router.post("/logout", (req: Request, res: Response) => {
-  res.clearCookie("token");
+  res.clearCookie("td_session");
   res.redirect("/login");
 });
 

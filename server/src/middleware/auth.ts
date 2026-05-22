@@ -9,7 +9,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     return;
   }
 
-  const token = req.cookies?.token;
+  const token = req.cookies?.td_session;
   if (!token) {
     res.redirect("/login");
     return;

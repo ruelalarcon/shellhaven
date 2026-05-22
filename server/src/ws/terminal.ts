@@ -34,7 +34,7 @@ export function setupWebSocket(wss: WebSocketServer) {
 
   wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     const cookies = parseCookies(req.headers.cookie || "");
-    if (!verifyToken(cookies.token || "")) {
+    if (!verifyToken(cookies.td_session || "")) {
       ws.close(4001, "Unauthorized");
       return;
     }
