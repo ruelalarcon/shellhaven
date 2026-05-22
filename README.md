@@ -117,7 +117,7 @@ cd /srv/myapp
 exec node server.js
 ```
 
-> Scripts do not need a shebang or the executable bit set — shellhaven spawns them as `bash <script>` directly.
+> Scripts do not need a shebang or the executable bit set - shellhaven spawns them as `bash -l -i <script>` (login + interactive), so your full user environment is available including tools installed via `.bashrc` such as nvm, GraalVM, and similar.
 
 > **Tip:** Use `exec` as the last command so the process replaces the bash wrapper. This makes CPU/memory stats accurate and ensures exit codes are passed through correctly.
 
@@ -347,7 +347,7 @@ sudo cp shellhaven.service /etc/systemd/system/shellhaven.service
 sudo nano /etc/systemd/system/shellhaven.service
 ```
 
-2. Edit the file to match your paths and user — replace `you` with your Linux username throughout:
+2. Edit the file to match your paths and user - replace `you` with your Linux username throughout:
 
 ```ini
 [Unit]

@@ -228,12 +228,16 @@ async function spawnShell(entry: ShellEntry) {
 
   logger.info(`[${entry.id}] spawning (policy=${entry.restartPolicy}${entry.group ? `, group=${entry.group}` : ""})`);
 
-  const proc = pty.spawn("bash", ["-l", scriptPath], {
+  const proc = pty.spawn("bash", ["-l", "-i", scriptPath], {
     name: "xterm-256color",
     cols: 220,
     rows: 50,
     cwd: os.homedir(),
-    env: process.env as { [key: string]: string },
+    env: {
+      ...process.env,
+      HOME: os.homedir(),
+      TERM: "xterm-256color",
+    } as { [key: string]: string },
   });
 
   entry.scrollback = "";
