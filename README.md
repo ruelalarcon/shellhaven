@@ -343,7 +343,7 @@ Create a service file so shellhaven starts on boot and is managed like any other
 1. Copy and edit the service file:
 
 ```bash
-sudo cp terminal-dashboard.service /etc/systemd/system/shellhaven.service
+sudo cp shellhaven.service /etc/systemd/system/shellhaven.service
 sudo nano /etc/systemd/system/shellhaven.service
 ```
 

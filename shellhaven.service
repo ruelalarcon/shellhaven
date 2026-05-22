@@ -1,0 +1,16 @@
+[Unit]
+Description=shellhaven
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/node /home/you/shellhaven/server/dist/server/src/index.js
+WorkingDirectory=/home/you/shellhaven
+Restart=always
+User=you
+Environment=NODE_ENV=production
+Environment=HOME=/home/you
+Environment=PORT=7456
+Environment=HOST=localhost
+
+[Install]
+WantedBy=multi-user.target
