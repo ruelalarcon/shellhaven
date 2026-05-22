@@ -340,14 +340,20 @@ Set `SHELLHAVEN_HOST=0.0.0.0` only if you are **not** using a reverse proxy and 
 
 Create a service file so shellhaven starts on boot and is managed like any other system service.
 
-1. Copy and edit the service file:
+1. Find your Node.js binary path:
+
+```bash
+which node
+```
+
+2. Copy and edit the service file:
 
 ```bash
 sudo cp shellhaven.service /etc/systemd/system/shellhaven.service
 sudo nano /etc/systemd/system/shellhaven.service
 ```
 
-2. Edit the file to match your paths and user - replace `you` with your Linux username throughout:
+3. Edit the file to match your paths and user - replace `you` with your Linux username and `/usr/bin/node` with the output of `which node` throughout:
 
 ```ini
 [Unit]
@@ -368,9 +374,7 @@ Environment=SHELLHAVEN_HOST=localhost
 WantedBy=multi-user.target
 ```
 
-> Replace every occurrence of `you` with your actual Linux username (e.g. `alice`). Make sure `ExecStart` also points to the correct Node.js binary (`which node`) and the correct compiled output path.
-
-3. Enable and start:
+4. Enable and start:
 
 ```bash
 sudo systemctl daemon-reload
@@ -379,7 +383,7 @@ sudo systemctl start shellhaven
 sudo systemctl status shellhaven
 ```
 
-4. View logs:
+5. View logs:
 
 ```bash
 journalctl -u shellhaven -f
