@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-const CONFIG_DIR = path.join(os.homedir(), ".terminal-dashboard");
+const CONFIG_DIR = path.join(os.homedir(), ".config", "terminal-dashboard");
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
 interface Config {
