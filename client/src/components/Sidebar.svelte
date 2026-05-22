@@ -12,15 +12,17 @@
     ChevronRight,
     Search,
     Activity,
+    ScrollText,
   } from "@lucide/svelte";
   import { push } from "svelte-spa-router";
 
-  let { services, selectedId, connected, btop, onselect }: {
+  let { services, selectedId, connected, btop, onselect, openLogs }: {
     services: ServiceState[];
     selectedId: string;
     connected: boolean;
     btop: boolean;
     onselect: (id: string) => void;
+    openLogs: (id: string) => void;
   } = $props();
 
   let query = $state("");
@@ -183,6 +185,9 @@
         {selectedId}
       </div>
       <div class="control-buttons">
+        <button class="ctrl-btn logs" onclick={() => openLogs(selectedId)}>
+          <ScrollText size={12} /><span>logs</span>
+        </button>
         <button class="ctrl-btn start" onclick={() => apiCall(`/api/services/${selectedId}/start`)}>
           <Play size={12} /><span>start</span>
         </button>
@@ -434,6 +439,7 @@
   }
 
   .ctrl-btn:hover { border-color: #2e2e3e; color: #a1aab8; background: #18181e; }
+  .ctrl-btn.logs:hover { border-color: #2e3a2e; color: #c9d1e0; background: #131a13; }
   .ctrl-btn.start:hover { border-color: #1e4a2e; color: #5af78e; background: #0d1f15; }
   .ctrl-btn.stop:hover { border-color: #4a1e1e; color: #ff6b6b; background: #1f0d0d; }
   .ctrl-btn.restart:hover { border-color: #2e3a4a; color: #61afef; background: #0d1520; }

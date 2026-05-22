@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { push } from "svelte-spa-router";
-  import type { ServiceState } from "../lib/types";
+  import type { ServiceState, PaneView } from "../lib/types";
   import { onMessage, onOpen, onClose, send } from "../lib/ws";
   import Sidebar from "./Sidebar.svelte";
   import TerminalPane from "./TerminalPane.svelte";
@@ -10,12 +10,23 @@
   let selectedId = $state("shell");
   let connected = $state(false);
   let btop = $state(false);
+  let view = $state<PaneView>({ type: "terminal" });
 
   let terminalIds = $derived([
     "shell",
     ...(btop ? ["btop"] : []),
     ...services.map((s) => s.id),
   ]);
+
+  function select(id: string) {
+    selectedId = id;
+    view = { type: "terminal" };
+  }
+
+  function openLogs(id: string) {
+    selectedId = id;
+    view = { type: "logs" };
+  }
 
   onMount(() => {
     const removeMsg = onMessage((msg) => {
@@ -37,8 +48,21 @@
 </script>
 
 <div class="dashboard">
-  <Sidebar {services} {selectedId} {connected} {btop} onselect={(id) => (selectedId = id)} />
-  <TerminalPane ids={terminalIds} {selectedId} {services} />
+  <Sidebar
+    {services}
+    {selectedId}
+    {connected}
+    {btop}
+    onselect={select}
+    {openLogs}
+  />
+  <TerminalPane
+    ids={terminalIds}
+    {selectedId}
+    {services}
+    {view}
+    onviewchange={(v) => (view = v)}
+  />
 </div>
 
 <style>

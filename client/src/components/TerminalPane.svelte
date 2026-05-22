@@ -1,12 +1,25 @@
 <script lang="ts">
   import Terminal from "./Terminal.svelte";
-  import type { ServiceState } from "../lib/types";
-  import { Trash2, Terminal as TerminalIcon, Circle, Cpu, Activity } from "@lucide/svelte";
+  import LogBrowser from "./LogBrowser.svelte";
+  import LogViewer from "./LogViewer.svelte";
+  import type { ServiceState, PaneView } from "../lib/types";
+  import {
+    Trash2,
+    Terminal as TerminalIcon,
+    Circle,
+    Cpu,
+    Activity,
+    ScrollText,
+    ChevronRight,
+    Download,
+  } from "@lucide/svelte";
 
-  let { ids, selectedId, services }: {
+  let { ids, selectedId, services, view, onviewchange }: {
     ids: string[];
     selectedId: string;
     services: ServiceState[];
+    view: PaneView;
+    onviewchange: (v: PaneView) => void;
   } = $props();
 
   let termRefs = $state<Record<string, Terminal>>({});
@@ -20,12 +33,19 @@
     if (id === "shell") return "";
     return services.find((s) => s.id === id)?.restartPolicy ?? "";
   }
+
+  let isService = $derived(selectedId !== "shell" && selectedId !== "btop");
+
+  function downloadUrl(filename: string): string {
+    return `/api/services/${selectedId}/logs/${encodeURIComponent(filename)}`;
+  }
 </script>
 
 <div class="pane">
   <!-- Toolbar -->
   <div class="toolbar">
     <div class="toolbar-left">
+      <!-- Icon -->
       <span class="toolbar-icon">
         {#if selectedId === "shell"}
           <TerminalIcon size={14} />
@@ -35,34 +55,77 @@
           <Cpu size={14} />
         {/if}
       </span>
-      <span class="terminal-name">{selectedId}</span>
-      {#if selectedId !== "shell" && selectedId !== "btop"}
-        {@const status = getStatus(selectedId)}
-        {@const policy = getRestartPolicy(selectedId)}
-        <span class="status-pill {status}">
-          <Circle size={6} class="pill-dot" />
-          {status}
-        </span>
-        {#if policy}
-          <span class="policy-tag">{policy}</span>
+
+      <!-- Breadcrumb -->
+      {#if view.type === "terminal"}
+        <span class="crumb-current">{selectedId}</span>
+        {#if isService}
+          {@const status = getStatus(selectedId)}
+          {@const policy = getRestartPolicy(selectedId)}
+          <span class="status-pill {status}">
+            <Circle size={6} class="pill-dot" />
+            {status}
+          </span>
+          {#if policy}
+            <span class="policy-tag">{policy}</span>
+          {/if}
         {/if}
+      {:else if view.type === "logs"}
+        <button class="crumb" onclick={() => onviewchange({ type: "terminal" })}>{selectedId}</button>
+        <ChevronRight size={10} class="crumb-sep" />
+        <span class="crumb-current">logs</span>
+      {:else if view.type === "log-file"}
+        <button class="crumb" onclick={() => onviewchange({ type: "terminal" })}>{selectedId}</button>
+        <ChevronRight size={10} class="crumb-sep" />
+        <button class="crumb" onclick={() => onviewchange({ type: "logs" })}>logs</button>
+        <ChevronRight size={10} class="crumb-sep" />
+        <span class="crumb-current">{view.filename}</span>
       {/if}
     </div>
+
+    <!-- Actions -->
     <div class="toolbar-right">
-      <button class="toolbar-btn" onclick={() => termRefs[selectedId]?.clear()} title="Clear terminal">
-        <Trash2 size={13} />
-        <span>clear</span>
-      </button>
+      {#if view.type === "terminal"}
+        {#if selectedId !== "btop"}
+          <button class="toolbar-btn" onclick={() => termRefs[selectedId]?.clear()}>
+            <Trash2 size={13} /><span>clear</span>
+          </button>
+        {/if}
+      {:else if view.type === "logs"}
+        <!-- no action -->
+      {:else if view.type === "log-file"}
+        <a class="toolbar-btn" href={downloadUrl(view.filename)} download={view.filename}>
+          <Download size={13} /><span>download</span>
+        </a>
+      {/if}
     </div>
   </div>
 
-  <!-- Terminals -->
-  <div class="terminal-area">
+  <!-- Content -->
+  <div class="content-area">
+    <!-- Terminals — always mounted, hidden when not active -->
     {#each ids as id (id)}
-      <div class="term-slot" style:display={id === selectedId ? "block" : "none"}>
-        <Terminal {id} visible={id === selectedId} bind:this={termRefs[id]} />
+      <div class="slot" style:display={view.type === "terminal" && id === selectedId ? "block" : "none"}>
+        <Terminal {id} visible={view.type === "terminal" && id === selectedId} bind:this={termRefs[id]} />
       </div>
     {/each}
+
+    <!-- Log browser -->
+    {#if view.type === "logs" && isService}
+      <div class="slot">
+        <LogBrowser
+          serviceId={selectedId}
+          onopen={(filename) => onviewchange({ type: "log-file", filename })}
+        />
+      </div>
+    {/if}
+
+    <!-- Log file viewer -->
+    {#if view.type === "log-file" && isService}
+      <div class="slot">
+        <LogViewer serviceId={selectedId} filename={view.filename} />
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -92,9 +155,10 @@
   .toolbar-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
     flex: 1;
+    overflow: hidden;
   }
 
   .toolbar-icon {
@@ -104,7 +168,24 @@
     flex-shrink: 0;
   }
 
-  .terminal-name {
+  .crumb {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4a4a62;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    transition: color 0.12s;
+    flex-shrink: 0;
+  }
+
+  .crumb:hover { color: #8b95a8; }
+
+  .crumb-current {
     font-size: 0.85rem;
     font-weight: 600;
     color: #c9d1e0;
@@ -113,6 +194,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  :global(.crumb-sep) { color: #2e2e3e; flex-shrink: 0; }
 
   .status-pill {
     display: inline-flex;
@@ -130,10 +213,8 @@
 
   .status-pill.running { background: #0d2018; color: #5af78e; }
   :global(.status-pill.running .pill-dot) { color: #5af78e; fill: #5af78e; }
-
   .status-pill.crashed { background: #200d0d; color: #ff6b6b; }
   :global(.status-pill.crashed .pill-dot) { color: #ff6b6b; fill: #ff6b6b; }
-
   .status-pill.stopped { background: #18181e; color: #4a4a62; }
   :global(.status-pill.stopped .pill-dot) { color: #3d3d52; fill: #3d3d52; }
 
@@ -167,6 +248,7 @@
     border-radius: 5px;
     transition: all 0.15s;
     white-space: nowrap;
+    text-decoration: none;
   }
 
   .toolbar-btn:hover {
@@ -175,17 +257,29 @@
     background: #1a0f0f;
   }
 
-  /* Terminal area */
-  .terminal-area {
+  a.toolbar-btn:hover {
+    border-color: #1e3a4a;
+    color: #61afef;
+    background: #0d1520;
+  }
+
+  /* Content */
+  .content-area {
     flex: 1;
     overflow: hidden;
     position: relative;
     background: #0d0d0f;
   }
 
-  .term-slot {
+  .slot {
     position: absolute;
     inset: 0;
     padding: 8px;
+  }
+
+  /* log browser/viewer don't need the 8px pad */
+  .slot:has(> :global(.browser)),
+  .slot:has(> :global(.viewer)) {
+    padding: 0;
   }
 </style>
