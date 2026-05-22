@@ -12,7 +12,7 @@ import { setupWebSocket } from "./ws/terminal";
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server, path: "/ws" });
 
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: false }));

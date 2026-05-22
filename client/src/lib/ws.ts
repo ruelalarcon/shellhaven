@@ -10,7 +10,7 @@ const closeHandlers = new Set<StateHandler>();
 
 function connect() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  socket = new WebSocket(`${proto}://${location.host}`);
+  socket = new WebSocket(`${proto}://${location.host}/ws`);
 
   socket.onopen = () => {
     for (const h of openHandlers) h();

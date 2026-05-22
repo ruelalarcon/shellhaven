@@ -15,6 +15,7 @@ export default defineConfig({
       "/ws": {
         target: "ws://127.0.0.1:7456",
         ws: true,
+        rewriteWsOrigin: true,
       },
     },
   },
