@@ -22,10 +22,15 @@ app.use(authRouter);
 
 app.use("/api", requireAuth, apiRouter);
 
-app.use(express.static(path.join(__dirname, "../../client/dist")));
+// In dev (tsx), __dirname is server/src. In prod (tsc), it's server/dist/server/src.
+const clientDist = __dirname.includes("dist")
+  ? path.resolve(__dirname, "../../../../client/dist")
+  : path.resolve(__dirname, "../../client/dist");
+
+app.use(express.static(clientDist));
 
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../../client/dist/index.html"));
+  res.sendFile(path.join(clientDist, "index.html"));
 });
 
 setupWebSocket(wss);
