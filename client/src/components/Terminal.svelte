@@ -57,11 +57,23 @@
       return true;
     });
 
+    let scrollbackReceived = false;
     const removeMsg = onMessage((msg) => {
-      if (msg.type === "output" && msg.id === id) term.write(msg.data);
+      if (msg.type === "output" && msg.id === id) {
+        if (!scrollbackReceived) {
+          scrollbackReceived = true;
+          term.write(msg.data, () => {
+            fitAddon?.fit();
+            term.scrollToBottom();
+          });
+        } else {
+          term.write(msg.data);
+        }
+      }
     });
 
     const removeOpen = onOpen(() => {
+      scrollbackReceived = false;
       fitAndResize();
       send({ type: "get-scrollback", id });
     });
