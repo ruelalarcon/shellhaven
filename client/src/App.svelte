@@ -22,11 +22,15 @@
 </script>
 
 <div class="app">
-  {#if !connected}
-    <div class="connecting">connecting…</div>
-  {/if}
-  <Sidebar {services} {selectedId} onselect={(id) => (selectedId = id)} />
-  <TerminalPane ids={terminalIds} {selectedId} />
+  <div class="main">
+    <Sidebar {services} {selectedId} onselect={(id) => (selectedId = id)} />
+    <TerminalPane ids={terminalIds} {selectedId} />
+  </div>
+  <div class="statusbar">
+    <span class="status" class:disconnected={!connected}>
+      {connected ? "connected" : "connecting…"}
+    </span>
+  </div>
 </div>
 
 <style>
@@ -36,17 +40,30 @@
 
   .app {
     display: flex;
+    flex-direction: column;
     height: 100vh;
     overflow: hidden;
-    position: relative;
   }
 
-  .connecting {
-    position: fixed;
-    top: 0.5rem;
-    right: 0.75rem;
-    font-size: 0.75rem;
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .statusbar {
+    flex-shrink: 0;
+    background: #141414;
+    border-top: 1px solid #333;
+    padding: 0 0.75rem;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #555;
+  }
+
+  .status.disconnected {
     color: #e5c07b;
-    z-index: 100;
   }
 </style>

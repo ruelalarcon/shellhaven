@@ -33,7 +33,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.3rem 0.75rem;
+    padding: 0 0.75rem;
+    height: 30px;
     background: #141414;
     border-bottom: 1px solid #333;
     flex-shrink: 0;
