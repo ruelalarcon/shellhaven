@@ -55,7 +55,7 @@ router.get("/shells/:id/logs", (req: Request, res: Response) => {
       return { name, size: stat.size, mtime: stat.mtimeMs };
     })
     .sort((a, b) => {
-      // latest.log always first, then newest → oldest
+      // latest.log always first, then newest -> oldest
       if (a.name === "latest.log") return -1;
       if (b.name === "latest.log") return 1;
       return b.mtime - a.mtime;

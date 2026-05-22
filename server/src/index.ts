@@ -9,6 +9,7 @@ import { requireAuth } from "./middleware/auth";
 import { getConfig } from "./config";
 import { initShells } from "./services/shellManager";
 import { setupWebSocket } from "./ws/terminal";
+import { log } from "./logger";
 
 const app = express();
 const server = http.createServer(app);
@@ -40,5 +41,5 @@ const PORT = parseInt(process.env.PORT || "7456", 10);
 const HOST = process.env.HOST || "localhost";
 
 server.listen(PORT, HOST, () => {
-  console.log(`shellhaven running at http://${HOST}:${PORT}`);
+  log.info(`shellhaven running at http://${HOST}:${PORT}`);
 });

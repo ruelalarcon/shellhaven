@@ -6,6 +6,9 @@ import path from "path";
 import { getConfig, saveConfig } from "../config";
 import { verifyToken } from "../middleware/auth";
 import { isBtopAvailable } from "../services/shellManager";
+import { createLogger } from "../logger";
+
+const logger = createLogger("auth");
 
 const router = Router();
 
@@ -39,6 +42,7 @@ router.post("/setup", async (req: Request, res: Response) => {
   const passwordHash = await bcrypt.hash(password, 10);
   const jwtSecret = crypto.randomBytes(64).toString("hex");
   saveConfig({ passwordHash, jwtSecret });
+  logger.info("initial setup completed");
   res.json({ ok: true });
 });
 
@@ -46,14 +50,20 @@ router.post("/login", async (req: Request, res: Response) => {
   const config = getConfig();
   if (!config) { res.status(400).json({ error: "Not configured." }); return; }
   const { password } = req.body as { password: string };
+  const ip = req.socket.remoteAddress ?? "unknown";
   const valid = await bcrypt.compare(password || "", config.passwordHash);
-  if (!valid) { res.status(401).json({ error: "Invalid password." }); return; }
+  if (!valid) {
+    logger.warn(`failed login attempt from ${ip}`);
+    res.status(401).json({ error: "Invalid password." });
+    return;
+  }
   const token = jwt.sign({}, config.jwtSecret, { expiresIn: "7d" });
   res.cookie("sh_session", token, {
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     sameSite: "strict",
   });
+  logger.info(`successful login from ${ip}`);
   res.json({ ok: true });
 });
 

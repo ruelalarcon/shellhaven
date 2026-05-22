@@ -5,6 +5,10 @@ import * as path from "path";
 import * as os from "os";
 import { execSync } from "child_process";
 import { RestartPolicy, ShellState, ShellStatus } from "../../../shared/types";
+import { createLogger, stripAnsi } from "../logger";
+
+const logger = createLogger("shells");
+const btopLog = createLogger("btop");
 
 const SHELLS_DIR = path.join(os.homedir(), "shells");
 const LOGS_DIR = path.join(SHELLS_DIR, "logs");
@@ -41,6 +45,7 @@ export function isBtopAvailable(): boolean {
 export function initBtop() {
   if (!isBtopAvailable()) return;
 
+  btopLog.info("spawning btop");
   const proc = pty.spawn("btop", [], {
     name: "xterm-256color",
     cols: 220,
@@ -60,7 +65,8 @@ export function initBtop() {
     for (const listener of btopSession.outputListeners) listener(data);
   });
 
-  proc.onExit(() => {
+  proc.onExit(({ exitCode }) => {
+    btopLog.warn(`btop exited (code ${exitCode}), restarting in 1s`);
     btopSession = null;
     setTimeout(initBtop, 1000);
   });
@@ -147,6 +153,7 @@ function dirSize(dir: string): number {
 }
 
 function pruneLogDir(dir: string, limit: number) {
+  const shellId = path.basename(dir);
   const files = fs.readdirSync(dir)
     .filter((f) => f !== "latest.log")
     .map((f) => ({ name: f, mtime: fs.statSync(path.join(dir, f)).mtimeMs }))
@@ -156,8 +163,10 @@ function pruneLogDir(dir: string, limit: number) {
   for (const file of files) {
     if (size <= limit) break;
     const fp = path.join(dir, file.name);
-    size -= fs.statSync(fp).size;
+    const fileSize = fs.statSync(fp).size;
+    size -= fileSize;
     fs.unlinkSync(fp);
+    logger.debug(`[${shellId}] pruned log ${file.name} (${(fileSize / 1024).toFixed(1)} KB freed, ${(size / 1024 / 1024).toFixed(2)} MB remaining)`);
   }
 }
 
@@ -172,8 +181,12 @@ function rotateLogs(id: string, limit: number): Promise<void> {
     return Promise.resolve();
   }
 
+  const shellId = path.basename(dir);
+  const latestSize = fs.statSync(latest).size;
   return new Promise((resolve) => {
-    const dest = path.join(dir, `${timestamp()}.log.gz`);
+    const destName = `${timestamp()}.log.gz`;
+    const dest = path.join(dir, destName);
+    logger.debug(`[${shellId}] rotating latest.log (${(latestSize / 1024).toFixed(1)} KB) -> ${destName}`);
     const src = fs.createReadStream(latest);
     const gz = zlib.createGzip();
     const out = fs.createWriteStream(dest);
@@ -181,9 +194,13 @@ function rotateLogs(id: string, limit: number): Promise<void> {
     out.on("finish", () => {
       fs.unlinkSync(latest);
       pruneLogDir(dir, limit);
+      logger.info(`[${shellId}] log rotated -> ${destName}`);
       resolve();
     });
-    out.on("error", () => resolve()); // don't block spawn on compression failure
+    out.on("error", (err) => {
+      logger.error(`[${shellId}] log rotation failed: ${err.message}`);
+      resolve(); // don't block spawn on compression failure
+    });
   });
 }
 
@@ -196,13 +213,18 @@ async function openLogStream(id: string, limit: number): Promise<fs.WriteStream>
 
 async function spawnShell(entry: ShellEntry) {
   const scriptPath = path.join(SHELLS_DIR, `${entry.id}.sh`);
-  if (!fs.existsSync(scriptPath)) return;
+  if (!fs.existsSync(scriptPath)) {
+    logger.error(`[${entry.id}] script not found: ${scriptPath}`);
+    return;
+  }
 
   entry.restartPolicy = parseRestartPolicy(scriptPath);
   entry.group = parseGroup(scriptPath);
   entry.logFolderLimit = parseLogFolderLimit(scriptPath);
 
   const logStream = await openLogStream(entry.id, entry.logFolderLimit);
+
+  logger.info(`[${entry.id}] spawning (policy=${entry.restartPolicy}${entry.group ? `, group=${entry.group}` : ""})`);
 
   const proc = pty.spawn("bash", ["-l", scriptPath], {
     name: "xterm-256color",
@@ -215,10 +237,11 @@ async function spawnShell(entry: ShellEntry) {
   entry.scrollback = "";
   entry.pty = proc;
   entry.status = "running";
+  logger.info(`[${entry.id}] started (pid=${proc.pid})`);
   notifyStateChange();
 
   proc.onData((data) => {
-    logStream.write(data);
+    logStream.write(stripAnsi(data));
     entry.scrollback += data;
     if (entry.scrollback.length > SCROLLBACK_LIMIT) {
       entry.scrollback = entry.scrollback.slice(-SCROLLBACK_LIMIT);
@@ -233,6 +256,13 @@ async function spawnShell(entry: ShellEntry) {
     entry.pty = null;
     const crashed = exitCode !== 0 && !entry.manualStop;
     entry.status = crashed ? "crashed" : "stopped";
+
+    if (crashed) {
+      logger.warn(`[${entry.id}] crashed (exit code ${exitCode})`);
+    } else {
+      logger.info(`[${entry.id}] stopped (exit code ${exitCode})`);
+    }
+
     notifyStateChange();
 
     const shouldRestart =
@@ -240,10 +270,13 @@ async function spawnShell(entry: ShellEntry) {
       (entry.restartPolicy === "unless-stopped" && !entry.manualStop);
 
     if (shouldRestart) {
+      logger.info(`[${entry.id}] scheduling restart in ${RESTART_DELAY_MS}ms`);
       setTimeout(() => {
         entry.manualStop = false;
         spawnShell(entry);
       }, RESTART_DELAY_MS);
+    } else {
+      logger.debug(`[${entry.id}] no restart (policy=${entry.restartPolicy}, manualStop=${entry.manualStop})`);
     }
   });
 }
@@ -261,6 +294,8 @@ export function initShells() {
     .readdirSync(SHELLS_DIR)
     .filter((f) => f.endsWith(".sh"))
     .map((f) => f.replace(/\.sh$/, ""));
+
+  logger.info(`discovered ${scripts.length} shell script(s): ${scripts.join(", ") || "(none)"}`);
 
   for (const id of scripts) {
     const scriptPath = path.join(SHELLS_DIR, `${id}.sh`);
@@ -292,6 +327,7 @@ export function getShellStates(): ShellState[] {
 export function startShell(id: string): boolean {
   const entry = shells.get(id);
   if (!entry || entry.status === "running") return false;
+  logger.info(`[${id}] manual start requested`);
   entry.manualStop = false;
   spawnShell(entry);
   return true;
@@ -300,6 +336,7 @@ export function startShell(id: string): boolean {
 export function stopShell(id: string): boolean {
   const entry = shells.get(id);
   if (!entry || entry.status !== "running" || !entry.pty) return false;
+  logger.info(`[${id}] manual stop requested`);
   entry.manualStop = true;
   entry.pty.kill();
   return true;
@@ -308,6 +345,7 @@ export function stopShell(id: string): boolean {
 export function restartShell(id: string): boolean {
   const entry = shells.get(id);
   if (!entry) return false;
+  logger.info(`[${id}] manual restart requested`);
   entry.manualStop = false;
   if (entry.pty) {
     entry.pty.kill();
@@ -318,6 +356,7 @@ export function restartShell(id: string): boolean {
 }
 
 export function startAllShells() {
+  logger.info("start-all requested");
   for (const entry of shells.values()) {
     if (entry.status !== "running") {
       entry.manualStop = false;
@@ -327,6 +366,7 @@ export function startAllShells() {
 }
 
 export function stopAllShells() {
+  logger.info("stop-all requested");
   for (const entry of shells.values()) {
     if (entry.status === "running" && entry.pty) {
       entry.manualStop = true;

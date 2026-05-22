@@ -4,6 +4,9 @@ import * as pty from "node-pty";
 import * as os from "os";
 import pidusage from "pidusage";
 import { verifyToken } from "../middleware/auth";
+import { createLogger } from "../logger";
+
+const logger = createLogger("ws");
 import {
   getShellStates,
   getScrollback,
@@ -67,13 +70,16 @@ export function setupWebSocket(wss: WebSocketServer) {
   setStateChangeCallback(broadcastState);
 
   wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+    const ip = req.socket.remoteAddress ?? "unknown";
     const cookies = parseCookies(req.headers.cookie || "");
     if (!verifyToken(cookies.sh_session || "")) {
+      logger.warn(`rejected unauthenticated WS connection from ${ip}`);
       ws.close(4001, "Unauthorized");
       return;
     }
 
     connectedClients.add(ws);
+    logger.info(`client connected from ${ip} (${connectedClients.size} total)`);
 
     const shell = spawnShell(ws);
 
@@ -129,6 +135,7 @@ export function setupWebSocket(wss: WebSocketServer) {
 
     ws.on("close", () => {
       connectedClients.delete(ws);
+      logger.info(`client disconnected from ${ip} (${connectedClients.size} remaining)`);
       shell.pty.kill();
       for (const [id, handler] of outputHandlers) {
         unsubscribeFromShellOutput(id, handler);
