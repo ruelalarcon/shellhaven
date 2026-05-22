@@ -1,8 +1,16 @@
 # shellhaven
 
-An extremely simple-to-use, lightweight, self-hosted service manager built for personal servers. Point it at a folder of bash scripts and get a browser-based UI with live terminals, automatic restarts, log rotation, and CPU/memory monitoring, all behind a password-protected login.
+![GitHub Repo stars](https://img.shields.io/github/stars/ruelalarcon/shellhaven)
+![GitHub License](https://img.shields.io/github/license/ruelalarcon/shellhaven)
+![GitHub top language](https://img.shields.io/github/languages/top/ruelalarcon/shellhaven)
+
+> An extremely simple-to-use, lightweight, self-hosted service manager built for personal servers.
+
+Point it at a folder of bash scripts and get a browser-based UI with live terminals, automatic restarts, log rotation, and CPU/memory monitoring, all behind a password-protected login.
 
 Unlike simple log viewers, shellhaven gives you full shell input through the browser. This makes it ideal for services that expect interactive commands, like a Minecraft server where you need to run `/op` or `/stop` without setting up RCON or a heavy control panel. It works equally well for monitoring and managing any kind of long-running service: web servers, bots, workers, scrapers, and more.
+
+<img width="1840" height="978" alt="shellhaven-screenshot" src="https://github.com/user-attachments/assets/36ad8216-49e5-4ad6-8737-daf5bcec71dc" />
 
 ---
 
