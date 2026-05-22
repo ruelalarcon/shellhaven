@@ -36,7 +36,4 @@ const HOST = process.env.HOST || "127.0.0.1";
 
 server.listen(PORT, HOST, () => {
   console.log(`Terminal Dashboard running at http://${HOST}:${PORT}`);
-  if (!getConfig()) {
-    console.log("No config found — visit /setup to create a password.");
-  }
 });
