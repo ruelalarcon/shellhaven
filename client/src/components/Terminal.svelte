@@ -84,7 +84,6 @@
       send({ type: "get-scrollback", id });
     });
 
-    send({ type: "get-scrollback", id });
 
     const ro = new ResizeObserver(() => {
       if (visible) fitAndResize();
@@ -117,6 +116,7 @@
 
   export function clear() {
     term?.clear();
+    send({ type: "clear-scrollback", id });
   }
 </script>
 

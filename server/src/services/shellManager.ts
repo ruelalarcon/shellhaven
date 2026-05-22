@@ -451,6 +451,12 @@ export function getScrollback(id: string): string {
   return shells.get(id)?.scrollback ?? "";
 }
 
+export function clearScrollback(id: string) {
+  const entry = shells.get(id);
+  if (entry) entry.scrollback = "";
+  if (id === "btop" && btopSession) btopSession.scrollback = "";
+}
+
 export function subscribeToShellOutput(id: string, listener: (data: string) => void) {
   shells.get(id)?.outputListeners.add(listener);
 }

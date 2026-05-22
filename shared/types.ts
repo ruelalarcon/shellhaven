@@ -16,8 +16,8 @@ export interface LogEntry {
 }
 
 export interface ShellStats {
-  cpu: number;   // percent, 0-100
-  mem: number;   // bytes
+  cpu: number; // percent, 0-100
+  mem: number; // bytes
 }
 
 export type WsMessage =
@@ -27,4 +27,5 @@ export type WsMessage =
   | { type: "state"; shells: ShellState[] }
   | { type: "stats"; stats: Record<string, ShellStats> }
   | { type: "get-scrollback"; id: string }
+  | { type: "clear-scrollback"; id: string }
   | { type: "get-state" };
