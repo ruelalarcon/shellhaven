@@ -40,5 +40,5 @@ const PORT = parseInt(process.env.PORT || "7456", 10);
 const HOST = process.env.HOST || "localhost";
 
 server.listen(PORT, HOST, () => {
-  console.log(`ShellHaven running at http://${HOST}:${PORT}`);
+  console.log(`shellhaven running at http://${HOST}:${PORT}`);
 });

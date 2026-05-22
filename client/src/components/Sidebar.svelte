@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ShellState, ShellStats } from "../lib/types";
-  import ServiceItem from "./ServiceItem.svelte";
+  import ShellItem from "./ShellItem.svelte";
   import {
     TerminalSquare,
     Play,
@@ -120,7 +120,7 @@
   <nav class="service-list">
     <!-- Shell always first, filtered by query -->
     {#if shellVisible}
-      <ServiceItem
+      <ShellItem
         service={{ id: "shell", status: "running", restartPolicy: "always" }}
         selected={selectedId === "shell"}
         onclick={() => onselect("shell")}
@@ -145,7 +145,7 @@
       {#if group === ""}
         <!-- Ungrouped: render flat -->
         {#each svcs as svc (svc.id)}
-          <ServiceItem
+          <ShellItem
             service={svc}
             selected={selectedId === svc.id}
             onclick={() => onselect(svc.id)}
@@ -169,7 +169,7 @@
           {#if !collapsedGroups.has(group)}
             <div class="group-items">
               {#each svcs as svc (svc.id)}
-                <ServiceItem
+                <ShellItem
                   service={svc}
                   selected={selectedId === svc.id}
                   onclick={() => onselect(svc.id)}
