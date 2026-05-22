@@ -63,6 +63,7 @@ Unlike simple log viewers, shellhaven gives you full shell input through the bro
 
 - **Node.js** 18 or later
 - **npm** 9 or later
+- **Git LFS** - required to clone font files (`sudo apt install git-lfs && git lfs install`)
 - A Linux/macOS host (node-pty requires a Unix PTY; WSL2 works on Windows)
 - `btop` (optional) - install via your package manager for the integrated system monitor
 
