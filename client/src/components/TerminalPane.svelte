@@ -1,20 +1,15 @@
 <script lang="ts">
   import Terminal from "./Terminal.svelte";
 
-  export let ids: string[];
-  export let selectedId: string;
+  let { ids, selectedId }: { ids: string[]; selectedId: string } = $props();
 
-  let termRefs: Record<string, Terminal> = {};
-
-  function clear() {
-    termRefs[selectedId]?.clear();
-  }
+  let termRefs = $state<Record<string, Terminal>>({});
 </script>
 
 <div class="pane">
   <div class="toolbar">
     <span class="label">{selectedId}</span>
-    <button on:click={clear}>Clear</button>
+    <button onclick={() => termRefs[selectedId]?.clear()}>Clear</button>
   </div>
   <div class="terminal-area">
     {#each ids as id (id)}
@@ -44,11 +39,7 @@
     flex-shrink: 0;
   }
 
-  .label {
-    font-family: monospace;
-    font-size: 0.85rem;
-    color: #888;
-  }
+  .label { font-family: monospace; font-size: 0.85rem; color: #888; }
 
   button {
     background: #2a2a2a;
@@ -61,10 +52,7 @@
     border-radius: 3px;
   }
 
-  button:hover {
-    background: #363636;
-    color: #ccc;
-  }
+  button:hover { background: #363636; color: #ccc; }
 
   .terminal-area {
     flex: 1;

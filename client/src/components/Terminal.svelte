@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { onMount, afterUpdate } from "svelte";
+  import { onMount } from "svelte";
   import { Terminal as XTerm } from "@xterm/xterm";
   import { FitAddon } from "@xterm/addon-fit";
   import { send, onMessage, onOpen } from "../lib/ws";
   import "@xterm/xterm/css/xterm.css";
 
-  export let id: string;
-  export let visible: boolean;
+  let { id, visible }: { id: string; visible: boolean } = $props();
 
   let container: HTMLDivElement;
   let term: XTerm;
@@ -50,14 +49,10 @@
     });
 
     const removeMsg = onMessage((msg) => {
-      if (msg.type === "output" && msg.id === id) {
-        term.write(msg.data);
-      }
+      if (msg.type === "output" && msg.id === id) term.write(msg.data);
     });
 
-    const removeOpen = onOpen(() => {
-      fitAndResize();
-    });
+    const removeOpen = onOpen(() => fitAndResize());
 
     const ro = new ResizeObserver(() => {
       if (visible) fitAndResize();
@@ -72,10 +67,8 @@
     };
   });
 
-  afterUpdate(() => {
-    if (visible && fitAddon) {
-      setTimeout(fitAndResize, 10);
-    }
+  $effect(() => {
+    if (visible && fitAddon) setTimeout(fitAndResize, 10);
   });
 
   function fitAndResize() {
@@ -99,11 +92,6 @@
     background: #1a1a1a;
   }
 
-  :global(.terminal-wrapper .xterm) {
-    height: 100%;
-  }
-
-  :global(.terminal-wrapper .xterm-viewport) {
-    overflow-y: auto;
-  }
+  :global(.terminal-wrapper .xterm) { height: 100%; }
+  :global(.terminal-wrapper .xterm-viewport) { overflow-y: auto; }
 </style>

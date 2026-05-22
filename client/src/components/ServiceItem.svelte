@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import type { ServiceState } from "../lib/types";
 
-  export let service: ServiceState;
-  export let selected: boolean;
-
-  const dispatch = createEventDispatcher<{ click: void }>();
+  let { service, selected, onclick }: {
+    service: ServiceState;
+    selected: boolean;
+    onclick: () => void;
+  } = $props();
 </script>
 
-<button class="service-item" class:selected on:click={() => dispatch("click")}>
+<button class="service-item" class:selected {onclick}>
   <span class="dot" class:running={service.status === "running"} class:crashed={service.status === "crashed"}></span>
   <span class="name">{service.id}</span>
 </button>
@@ -30,15 +30,8 @@
     border-radius: 3px;
   }
 
-  .service-item:hover {
-    background: #2a2a2a;
-    color: #e0e0e0;
-  }
-
-  .service-item.selected {
-    background: #2d3748;
-    color: #fff;
-  }
+  .service-item:hover { background: #2a2a2a; color: #e0e0e0; }
+  .service-item.selected { background: #2d3748; color: #fff; }
 
   .dot {
     width: 8px;
@@ -48,13 +41,8 @@
     background: #555;
   }
 
-  .dot.running {
-    background: #98c379;
-  }
-
-  .dot.crashed {
-    background: #e06c75;
-  }
+  .dot.running { background: #98c379; }
+  .dot.crashed { background: #e06c75; }
 
   .name {
     overflow: hidden;

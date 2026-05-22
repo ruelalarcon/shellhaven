@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import type { ServiceState } from "../lib/types";
   import ServiceItem from "./ServiceItem.svelte";
 
-  export let services: ServiceState[];
-  export let selectedId: string;
-
-  const dispatch = createEventDispatcher<{ select: string }>();
+  let { services, selectedId, onselect }: {
+    services: ServiceState[];
+    selectedId: string;
+    onselect: (id: string) => void;
+  } = $props();
 
   async function apiCall(url: string) {
     await fetch(url, { method: "POST" });
@@ -18,28 +18,24 @@
     <ServiceItem
       service={{ id: "shell", status: "running", restartPolicy: "always" }}
       selected={selectedId === "shell"}
-      on:click={() => dispatch("select", "shell")}
+      onclick={() => onselect("shell")}
     />
     {#each services as svc (svc.id)}
-      <ServiceItem
-        service={svc}
-        selected={selectedId === svc.id}
-        on:click={() => dispatch("select", svc.id)}
-      />
+      <ServiceItem service={svc} selected={selectedId === svc.id} onclick={() => onselect(svc.id)} />
     {/each}
   </div>
 
   <div class="section global-actions">
-    <button on:click={() => apiCall("/api/services/start-all")}>Start All</button>
-    <button on:click={() => apiCall("/api/services/stop-all")}>Stop All</button>
+    <button onclick={() => apiCall("/api/services/start-all")}>Start All</button>
+    <button onclick={() => apiCall("/api/services/stop-all")}>Stop All</button>
   </div>
 
   {#if selectedId !== "shell"}
     <div class="section per-service">
       <div class="section-label">{selectedId}</div>
-      <button on:click={() => apiCall(`/api/services/${selectedId}/start`)}>Start</button>
-      <button on:click={() => apiCall(`/api/services/${selectedId}/stop`)}>Stop</button>
-      <button on:click={() => apiCall(`/api/services/${selectedId}/restart`)}>Restart</button>
+      <button onclick={() => apiCall(`/api/services/${selectedId}/start`)}>Start</button>
+      <button onclick={() => apiCall(`/api/services/${selectedId}/stop`)}>Stop</button>
+      <button onclick={() => apiCall(`/api/services/${selectedId}/restart`)}>Restart</button>
     </div>
   {/if}
 
@@ -73,8 +69,7 @@
     overflow-y: auto;
   }
 
-  .global-actions,
-  .per-service {
+  .global-actions, .per-service {
     padding: 0.5rem 0.75rem;
     display: flex;
     flex-direction: column;
@@ -102,22 +97,10 @@
     border-radius: 3px;
   }
 
-  button:hover {
-    background: #363636;
-    color: #e0e0e0;
-  }
+  button:hover { background: #363636; color: #e0e0e0; }
 
-  .spacer {
-    flex: 1;
-  }
+  .spacer { flex: 1; }
 
-  .logout {
-    padding: 0.5rem 0.75rem;
-  }
-
-  .logout-btn {
-    width: 100%;
-    color: #888;
-    font-size: 0.8rem;
-  }
+  .logout { padding: 0.5rem 0.75rem; }
+  .logout-btn { width: 100%; color: #888; font-size: 0.8rem; }
 </style>

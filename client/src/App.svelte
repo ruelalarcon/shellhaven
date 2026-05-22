@@ -5,17 +5,15 @@
   import Sidebar from "./components/Sidebar.svelte";
   import TerminalPane from "./components/TerminalPane.svelte";
 
-  let services: ServiceState[] = [];
-  let selectedId: string = "shell";
-  let connected: boolean = false;
+  let services = $state<ServiceState[]>([]);
+  let selectedId = $state("shell");
+  let connected = $state(false);
 
-  $: terminalIds = ["shell", ...services.map((s) => s.id)];
+  let terminalIds = $derived(["shell", ...services.map((s) => s.id)]);
 
   onMount(() => {
     const removeMsg = onMessage((msg) => {
-      if (msg.type === "state") {
-        services = msg.services;
-      }
+      if (msg.type === "state") services = msg.services;
     });
     const removeOpen = onOpen(() => { connected = true; });
     const removeClose = onClose(() => { connected = false; });
@@ -27,27 +25,14 @@
   {#if !connected}
     <div class="connecting">connecting…</div>
   {/if}
-  <Sidebar {services} {selectedId} on:select={(e) => (selectedId = e.detail)} />
+  <Sidebar {services} {selectedId} onselect={(id) => (selectedId = id)} />
   <TerminalPane ids={terminalIds} {selectedId} />
 </div>
 
 <style>
-  :global(*, *::before, *::after) {
-    box-sizing: border-box;
-  }
-
-  :global(html, body) {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background: #1a1a1a;
-    color: #e0e0e0;
-    font-family: monospace;
-  }
-
-  :global(#app) {
-    height: 100%;
-  }
+  :global(*, *::before, *::after) { box-sizing: border-box; }
+  :global(html, body) { margin: 0; padding: 0; height: 100%; background: #1a1a1a; color: #e0e0e0; font-family: monospace; }
+  :global(#app) { height: 100%; }
 
   .app {
     display: flex;
