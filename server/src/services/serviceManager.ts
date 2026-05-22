@@ -7,6 +7,7 @@ import { RestartPolicy, ServiceState, ServiceStatus } from "../../../shared/type
 const SERVICES_DIR = path.join(os.homedir(), "services");
 const LOGS_DIR = path.join(SERVICES_DIR, "logs");
 const RESTART_DELAY_MS = 3000;
+const SCROLLBACK_LIMIT = 100 * 1024; // 100 KB per service
 
 interface ServiceEntry {
   id: string;
@@ -15,6 +16,7 @@ interface ServiceEntry {
   pty: pty.IPty | null;
   manualStop: boolean;
   outputListeners: Set<(data: string) => void>;
+  scrollback: string;
 }
 
 const services = new Map<string, ServiceEntry>();
@@ -66,12 +68,17 @@ function spawnService(entry: ServiceEntry) {
     env: process.env as { [key: string]: string },
   });
 
+  entry.scrollback = "";
   entry.pty = proc;
   entry.status = "running";
   notifyStateChange();
 
   proc.onData((data) => {
     logStream.write(data);
+    entry.scrollback += data;
+    if (entry.scrollback.length > SCROLLBACK_LIMIT) {
+      entry.scrollback = entry.scrollback.slice(-SCROLLBACK_LIMIT);
+    }
     for (const listener of entry.outputListeners) {
       listener(data);
     }
@@ -119,6 +126,7 @@ export function initServices() {
       pty: null,
       manualStop: false,
       outputListeners: new Set(),
+      scrollback: "",
     };
     services.set(id, entry);
     spawnService(entry);
@@ -185,6 +193,10 @@ export function writeToService(id: string, data: string) {
 
 export function resizeService(id: string, cols: number, rows: number) {
   services.get(id)?.pty?.resize(cols, rows);
+}
+
+export function getScrollback(id: string): string {
+  return services.get(id)?.scrollback ?? "";
 }
 
 export function subscribeToOutput(id: string, listener: (data: string) => void) {

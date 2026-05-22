@@ -5,6 +5,7 @@ import * as os from "os";
 import { verifyToken } from "../middleware/auth";
 import {
   getServiceStates,
+  getScrollback,
   writeToService,
   resizeService,
   subscribeToOutput,
@@ -50,6 +51,8 @@ export function setupWebSocket(wss: WebSocketServer) {
       };
       outputHandlers.set(svc.id, handler);
       subscribeToOutput(svc.id, handler);
+      const scrollback = getScrollback(svc.id);
+      if (scrollback) send(ws, { type: "output", id: svc.id, data: scrollback });
     }
 
     send(ws, { type: "state", services: getServiceStates() });
