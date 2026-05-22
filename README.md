@@ -111,12 +111,13 @@ The shell's **name** in the UI is derived from the filename (without `.sh`).
 ### Basic Example
 
 ```bash
-#!/usr/bin/env bash
 # ~/shells/api.sh
 
 cd /srv/myapp
 exec node server.js
 ```
+
+> Scripts do not need a shebang or the executable bit set — shellhaven spawns them as `bash <script>` directly.
 
 > **Tip:** Use `exec` as the last command so the process replaces the bash wrapper. This makes CPU/memory stats accurate and ensures exit codes are passed through correctly.
 
@@ -125,7 +126,6 @@ exec node server.js
 Behaviour is configured via specially formatted comments at the top of the script. All directives are optional. Directive values are read at initial startup and whenever you trigger a **rescan** (see below); they are not re-read on individual restarts.
 
 ```bash
-#!/usr/bin/env bash
 # restart: always
 # group: backend
 # log-folder-limit: 50mb
@@ -347,7 +347,7 @@ sudo cp terminal-dashboard.service /etc/systemd/system/shellhaven.service
 sudo nano /etc/systemd/system/shellhaven.service
 ```
 
-2. Edit the file to match your paths and user:
+2. Edit the file to match your paths and user — replace `you` with your Linux username throughout:
 
 ```ini
 [Unit]
@@ -368,7 +368,7 @@ Environment=HOST=localhost
 WantedBy=multi-user.target
 ```
 
-> Make sure `ExecStart` points to the correct Node.js binary (`which node`) and the correct compiled output path.
+> Replace every occurrence of `you` with your actual Linux username (e.g. `alice`). Make sure `ExecStart` also points to the correct Node.js binary (`which node`) and the correct compiled output path.
 
 3. Enable and start:
 
