@@ -5,13 +5,13 @@ import { getConfig } from "../config";
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const config = getConfig();
   if (!config) {
-    res.redirect("/setup");
+    res.status(401).json({ error: "Not configured." });
     return;
   }
 
   const token = req.cookies?.td_session;
   if (!token) {
-    res.redirect("/login");
+    res.status(401).json({ error: "Unauthorized." });
     return;
   }
 
@@ -19,7 +19,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     jwt.verify(token, config.jwtSecret);
     next();
   } catch {
-    res.redirect("/login");
+    res.status(401).json({ error: "Unauthorized." });
   }
 }
 

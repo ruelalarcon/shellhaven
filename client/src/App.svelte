@@ -1,30 +1,17 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import type { ServiceState } from "./lib/types";
-  import { onMessage, onOpen, onClose } from "./lib/ws";
-  import Sidebar from "./components/Sidebar.svelte";
-  import TerminalPane from "./components/TerminalPane.svelte";
+  import Router from "svelte-spa-router";
+  import Dashboard from "./components/Dashboard.svelte";
+  import Login from "./pages/Login.svelte";
+  import Setup from "./pages/Setup.svelte";
 
-  let services = $state<ServiceState[]>([]);
-  let selectedId = $state("shell");
-  let connected = $state(false);
-
-  let terminalIds = $derived(["shell", ...services.map((s) => s.id)]);
-
-  onMount(() => {
-    const removeMsg = onMessage((msg) => {
-      if (msg.type === "state") services = msg.services;
-    });
-    const removeOpen = onOpen(() => { connected = true; });
-    const removeClose = onClose(() => { connected = false; });
-    return () => { removeMsg(); removeOpen(); removeClose(); };
-  });
+  const routes = {
+    "/": Dashboard,
+    "/login": Login,
+    "/setup": Setup,
+  };
 </script>
 
-<div class="app">
-  <Sidebar {services} {selectedId} {connected} onselect={(id) => (selectedId = id)} />
-  <TerminalPane ids={terminalIds} {selectedId} {services} />
-</div>
+<Router {routes} />
 
 <style>
   :global(*, *::before, *::after) { box-sizing: border-box; }
@@ -33,15 +20,8 @@
     padding: 0;
     height: 100%;
     background: #0d0d0f;
-    color: #e2e8f0;
+    color: #c9d1e0;
     font-family: "CaskaydiaMonoNerdFont", ui-monospace, monospace;
   }
   :global(#app) { height: 100%; }
-
-  .app {
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-    background: #0d0d0f;
-  }
 </style>

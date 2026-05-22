@@ -11,6 +11,7 @@
     WifiOff,
     ChevronRight,
   } from "@lucide/svelte";
+  import { push } from "svelte-spa-router";
 
   let { services, selectedId, connected, onselect }: {
     services: ServiceState[];
@@ -21,6 +22,11 @@
 
   async function apiCall(url: string) {
     await fetch(url, { method: "POST" });
+  }
+
+  async function logout() {
+    await fetch("/logout", { method: "POST" });
+    push("/login");
   }
 
   let selectedService = $derived(services.find((s) => s.id === selectedId));
@@ -100,12 +106,10 @@
       </button>
     </div>
     <div class="logout-row">
-      <form method="POST" action="/logout">
-        <button type="submit" class="logout-btn">
-          <LogOut size={12} />
-          <span>logout</span>
-        </button>
-      </form>
+      <button class="logout-btn" onclick={logout}>
+        <LogOut size={12} />
+        <span>logout</span>
+      </button>
     </div>
   </div>
 </aside>
@@ -258,8 +262,6 @@
   .logout-row {
     padding: 0 10px 2px;
   }
-
-  .logout-row form { width: 100%; }
 
   .logout-btn {
     display: flex;
