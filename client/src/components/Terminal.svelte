@@ -13,30 +13,36 @@
 
   onMount(() => {
     term = new XTerm({
-      fontFamily: '"CaskaydiaMono Nerd Font", "Cascadia Mono", monospace',
+      fontFamily: '"CaskaydiaMonoNerdFontMono", ui-monospace, monospace',
       fontSize: 14,
+      lineHeight: 1.35,
+      letterSpacing: 0.3,
       theme: {
-        background: "#1a1a1a",
-        foreground: "#e0e0e0",
-        cursor: "#e0e0e0",
-        black: "#1a1a1a",
-        red: "#e06c75",
-        green: "#98c379",
-        yellow: "#e5c07b",
+        background: "#0d0d0f",
+        foreground: "#c9d1e0",
+        cursor: "#c9d1e0",
+        cursorAccent: "#0d0d0f",
+        selectionBackground: "#2d2b55",
+        black: "#1a1a22",
+        red: "#ff6b6b",
+        green: "#5af78e",
+        yellow: "#f4d03f",
         blue: "#61afef",
         magenta: "#c678dd",
-        cyan: "#56b6c2",
-        white: "#abb2bf",
-        brightBlack: "#5c6370",
-        brightRed: "#e06c75",
-        brightGreen: "#98c379",
-        brightYellow: "#e5c07b",
-        brightBlue: "#61afef",
-        brightMagenta: "#c678dd",
-        brightCyan: "#56b6c2",
-        brightWhite: "#ffffff",
+        cyan: "#56d4c8",
+        white: "#c9d1e0",
+        brightBlack: "#4a4a62",
+        brightRed: "#ff8585",
+        brightGreen: "#72f7a4",
+        brightYellow: "#f7e06a",
+        brightBlue: "#7ec8ff",
+        brightMagenta: "#d89cf7",
+        brightCyan: "#78e8de",
+        brightWhite: "#e8edf5",
       },
       cursorBlink: true,
+      cursorStyle: "block",
+      scrollback: 5000,
     });
 
     fitAddon = new FitAddon();
@@ -120,9 +126,13 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #1a1a1a;
+    background: #0d0d0f;
   }
 
   :global(.terminal-wrapper .xterm) { height: 100%; }
   :global(.terminal-wrapper .xterm-viewport) { overflow-y: auto; }
+  :global(.terminal-wrapper .xterm-viewport::-webkit-scrollbar) { width: 6px; }
+  :global(.terminal-wrapper .xterm-viewport::-webkit-scrollbar-track) { background: transparent; }
+  :global(.terminal-wrapper .xterm-viewport::-webkit-scrollbar-thumb) { background: #2a2a38; border-radius: 3px; }
+  :global(.terminal-wrapper .xterm-viewport::-webkit-scrollbar-thumb:hover) { background: #3a3a50; }
 </style>
