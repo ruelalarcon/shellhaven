@@ -32,7 +32,7 @@ setupWebSocket(wss);
 initServices();
 
 const PORT = parseInt(process.env.PORT || "7456", 10);
-const HOST = process.env.HOST || "127.0.0.1";
+const HOST = process.env.HOST || "localhost";
 
 server.listen(PORT, HOST, () => {
   console.log(`Terminal Dashboard running at http://${HOST}:${PORT}`);
