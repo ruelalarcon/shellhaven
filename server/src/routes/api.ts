@@ -9,6 +9,7 @@ import {
   restartShell,
   startAllShells,
   stopAllShells,
+  rescanShells,
   getShellStates,
 } from "../services/shellManager";
 
@@ -18,6 +19,11 @@ const router = Router();
 
 router.get("/shells", (req: Request, res: Response) => {
   res.json(getShellStates());
+});
+
+router.post("/shells/rescan", (req: Request, res: Response) => {
+  rescanShells();
+  res.json({ ok: true });
 });
 
 router.post("/shells/start-all", (req: Request, res: Response) => {

@@ -19,8 +19,12 @@ router.get("/api/status", (req: Request, res: Response) => {
   res.json({ configured, authenticated, btop: isBtopAvailable() });
 });
 
+const clientDist = __dirname.includes("dist")
+  ? path.resolve(__dirname, "../../../../../client/dist")
+  : path.resolve(__dirname, "../../../client/dist");
+
 const spa = (res: Response) =>
-  res.sendFile(path.join(__dirname, "../../../client/dist/index.html"));
+  res.sendFile(path.join(clientDist, "index.html"));
 
 router.get("/setup", (req: Request, res: Response) => {
   if (getConfig()) { res.redirect("/"); return; }

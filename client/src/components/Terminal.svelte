@@ -104,6 +104,7 @@
       setTimeout(() => {
         fitAndResize();
         term?.scrollToBottom();
+        term?.focus();
       }, 10);
     }
   });

@@ -15,6 +15,7 @@ import {
   subscribeToShellOutput,
   unsubscribeFromShellOutput,
   setStateChangeCallback,
+  setNewShellCallback,
   isBtopAvailable,
   getBtopScrollback,
   writeToBtop,
@@ -66,6 +67,15 @@ function parseCookies(cookieHeader: string): Record<string, string> {
   return cookies;
 }
 
+// Per-connection callback registry: called when a new shell is added via rescan
+const newShellSubscribers = new Map<WebSocket, (id: string) => void>();
+
+setNewShellCallback((id: string) => {
+  for (const [ws, subscribe] of newShellSubscribers) {
+    subscribe(id);
+  }
+});
+
 export function setupWebSocket(wss: WebSocketServer) {
   setStateChangeCallback(broadcastState);
 
@@ -85,13 +95,18 @@ export function setupWebSocket(wss: WebSocketServer) {
 
     const outputHandlers = new Map<string, (data: string) => void>();
 
-    for (const svc of getShellStates()) {
-      const handler = (data: string) => {
-        send(ws, { type: "output", id: svc.id, data });
-      };
-      outputHandlers.set(svc.id, handler);
-      subscribeToShellOutput(svc.id, handler);
+    function subscribeToShell(id: string) {
+      if (outputHandlers.has(id)) return;
+      const handler = (data: string) => send(ws, { type: "output", id, data });
+      outputHandlers.set(id, handler);
+      subscribeToShellOutput(id, handler);
     }
+
+    for (const svc of getShellStates()) {
+      subscribeToShell(svc.id);
+    }
+
+    newShellSubscribers.set(ws, subscribeToShell);
 
     let btopHandler: ((data: string) => void) | null = null;
     if (isBtopAvailable()) {
@@ -135,6 +150,7 @@ export function setupWebSocket(wss: WebSocketServer) {
 
     ws.on("close", () => {
       connectedClients.delete(ws);
+      newShellSubscribers.delete(ws);
       logger.info(`client disconnected from ${ip} (${connectedClients.size} remaining)`);
       shell.pty.kill();
       for (const [id, handler] of outputHandlers) {

@@ -13,6 +13,7 @@
     Search,
     Activity,
     ScrollText,
+    ScanSearch,
   } from "@lucide/svelte";
   import { push } from "svelte-spa-router";
 
@@ -235,6 +236,9 @@
       </button>
       <button class="ghost-btn" onclick={() => apiCall("/api/shells/stop-all")}>
         <Square size={11} /><span>stop all</span>
+      </button>
+      <button class="ghost-btn rescan" onclick={() => apiCall("/api/shells/rescan")} title="Rescan ~/shells/ for added, removed, or changed scripts">
+        <ScanSearch size={11} /><span>rescan</span>
       </button>
     </div>
     <div class="logout-row">
@@ -515,6 +519,7 @@
 
   .global-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     padding: 4px 10px 8px;
   }
@@ -537,6 +542,7 @@
   }
 
   .ghost-btn:hover { border-color: #2e2e3e; color: #7c8494; background: #18181e; }
+  .ghost-btn.rescan:hover { border-color: #3a2e4a; color: #b08cda; background: #18121e; }
 
   .logout-row { padding: 0 10px 2px; }
 

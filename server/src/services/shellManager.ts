@@ -102,6 +102,12 @@ function notifyStateChange() {
   onStateChange?.();
 }
 
+let onNewShell: ((id: string) => void) | null = null;
+
+export function setNewShellCallback(cb: (id: string) => void) {
+  onNewShell = cb;
+}
+
 function parseRestartPolicy(scriptPath: string): RestartPolicy {
   try {
     const content = fs.readFileSync(scriptPath, "utf8");
@@ -217,10 +223,6 @@ async function spawnShell(entry: ShellEntry) {
     logger.error(`[${entry.id}] script not found: ${scriptPath}`);
     return;
   }
-
-  entry.restartPolicy = parseRestartPolicy(scriptPath);
-  entry.group = parseGroup(scriptPath);
-  entry.logFolderLimit = parseLogFolderLimit(scriptPath);
 
   const logStream = await openLogStream(entry.id, entry.logFolderLimit);
 
@@ -353,6 +355,68 @@ export function restartShell(id: string): boolean {
     spawnShell(entry);
   }
   return true;
+}
+
+export function rescanShells() {
+  if (!fs.existsSync(SHELLS_DIR)) {
+    logger.warn("shells directory does not exist, nothing to scan");
+    return;
+  }
+
+  const found = new Set(
+    fs.readdirSync(SHELLS_DIR)
+      .filter((f) => f.endsWith(".sh"))
+      .map((f) => f.replace(/\.sh$/, ""))
+  );
+
+  // Update directives for existing shells; detect removed
+  for (const [id, entry] of shells) {
+    if (!found.has(id)) {
+      logger.info(`[${id}] script removed — stopping and unregistering`);
+      if (entry.pty) {
+        entry.manualStop = true;
+        entry.pty.kill();
+      }
+      shells.delete(id);
+    } else {
+      // Re-parse directives
+      const scriptPath = path.join(SHELLS_DIR, `${id}.sh`);
+      const newPolicy = parseRestartPolicy(scriptPath);
+      const newGroup = parseGroup(scriptPath);
+      const newLimit = parseLogFolderLimit(scriptPath);
+      const changed: string[] = [];
+      if (entry.restartPolicy !== newPolicy) { changed.push(`policy: ${entry.restartPolicy} → ${newPolicy}`); entry.restartPolicy = newPolicy; }
+      if (entry.group !== newGroup) { changed.push(`group: ${entry.group ?? "(none)"} → ${newGroup ?? "(none)"}`); entry.group = newGroup; }
+      if (entry.logFolderLimit !== newLimit) { changed.push(`log-limit: ${entry.logFolderLimit} → ${newLimit}`); entry.logFolderLimit = newLimit; }
+      if (changed.length) logger.info(`[${id}] directives updated — ${changed.join(", ")}`);
+      else logger.debug(`[${id}] directives unchanged`);
+    }
+  }
+
+  // Register and spawn new shells
+  for (const id of found) {
+    if (!shells.has(id)) {
+      const scriptPath = path.join(SHELLS_DIR, `${id}.sh`);
+      logger.info(`[${id}] new script discovered — registering`);
+      const entry: ShellEntry = {
+        id,
+        restartPolicy: parseRestartPolicy(scriptPath),
+        group: parseGroup(scriptPath),
+        logFolderLimit: parseLogFolderLimit(scriptPath),
+        status: "stopped",
+        pty: null,
+        manualStop: false,
+        outputListeners: new Set(),
+        scrollback: "",
+      };
+      shells.set(id, entry);
+      onNewShell?.(id);
+      spawnShell(entry);
+    }
+  }
+
+  logger.info(`rescan complete — ${shells.size} shell(s) registered`);
+  notifyStateChange();
 }
 
 export function startAllShells() {
