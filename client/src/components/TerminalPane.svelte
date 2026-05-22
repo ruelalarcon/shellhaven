@@ -263,6 +263,14 @@
     background: #0d1520;
   }
 
+  @media (max-width: 767px) {
+    .toolbar { padding: 0 10px; height: 42px; }
+    .toolbar-btn span { display: none; }
+    .toolbar-btn { padding: 6px 8px; }
+    .crumb-current { font-size: 0.8rem; }
+    .crumb { font-size: 0.8rem; }
+  }
+
   /* Content */
   .content-area {
     flex: 1;

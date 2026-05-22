@@ -5,12 +5,14 @@
   import { onMessage, onOpen, onClose, send } from "../lib/ws";
   import Sidebar from "./Sidebar.svelte";
   import TerminalPane from "./TerminalPane.svelte";
+  import { TerminalSquare, Menu, Wifi, WifiOff } from "@lucide/svelte";
 
   let services = $state<ServiceState[]>([]);
   let selectedId = $state("shell");
   let connected = $state(false);
   let btop = $state(false);
   let view = $state<PaneView>({ type: "terminal" });
+  let sidebarOpen = $state(false);
 
   let terminalIds = $derived([
     "shell",
@@ -48,28 +50,160 @@
 </script>
 
 <div class="dashboard">
-  <Sidebar
-    {services}
-    {selectedId}
-    {connected}
-    {btop}
-    onselect={select}
-    {openLogs}
-  />
-  <TerminalPane
-    ids={terminalIds}
-    {selectedId}
-    {services}
-    {view}
-    onviewchange={(v) => (view = v)}
-  />
+  <!-- Mobile top bar -->
+  <div class="mobile-bar">
+    <div class="mobile-brand">
+      <TerminalSquare size={14} />
+      <span>services</span>
+    </div>
+    <div class="mobile-right">
+      <span class="mobile-conn" class:connected>
+        {#if connected}<Wifi size={13} />{:else}<WifiOff size={13} />{/if}
+      </span>
+      <button class="mobile-menu" onclick={() => (sidebarOpen = !sidebarOpen)}>
+        <Menu size={18} />
+      </button>
+    </div>
+  </div>
+
+  <!-- Sidebar drawer backdrop -->
+  <div class="backdrop" class:visible={sidebarOpen} onclick={() => (sidebarOpen = false)}></div>
+
+  <div class="layout">
+    <div class="sidebar-wrap" class:open={sidebarOpen}>
+      <Sidebar
+        {services}
+        {selectedId}
+        {connected}
+        {btop}
+        onselect={select}
+        {openLogs}
+      />
+    </div>
+    <TerminalPane
+      ids={terminalIds}
+      {selectedId}
+      {services}
+      {view}
+      onviewchange={(v) => (view = v)}
+    />
+  </div>
 </div>
 
 <style>
   .dashboard {
     display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
     overflow: hidden;
+  }
+
+  /* Mobile top bar — hidden on desktop */
+  .mobile-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    height: 46px;
+    background: #111114;
+    border-bottom: 1px solid #1e1e24;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #c9d1e0;
+    letter-spacing: 0.08em;
+  }
+
+  .mobile-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mobile-conn {
+    display: flex;
+    align-items: center;
+    color: #3d3d4a;
+    transition: color 0.3s;
+  }
+
+  .mobile-conn.connected { color: #5af78e; }
+
+  .mobile-menu {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+
+  .mobile-menu:hover { color: #c9d1e0; }
+
+  /* Backdrop */
+  .backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  .backdrop.visible { opacity: 1; }
+
+  /* Layout */
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .sidebar-wrap {
+    display: contents;
+  }
+
+  /* Mobile styles */
+  @media (max-width: 767px) {
+    .mobile-bar { display: flex; }
+
+    .backdrop { display: block; pointer-events: none; }
+    .backdrop.visible { pointer-events: auto; }
+
+    .sidebar-wrap {
+      display: block;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 30;
+      max-height: 75vh;
+      transform: translateY(100%);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 12px 12px 0 0;
+      overflow: hidden;
+    }
+
+    .sidebar-wrap.open {
+      transform: translateY(0);
+    }
+
+    /* Hide the sidebar's own header on mobile since we have the top bar */
+    .sidebar-wrap :global(.sidebar .header) {
+      display: none;
+    }
   }
 </style>

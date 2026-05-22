@@ -76,4 +76,8 @@
   .content::-webkit-scrollbar { width: 6px; }
   .content::-webkit-scrollbar-track { background: transparent; }
   .content::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 3px; }
+
+  @media (max-width: 767px) {
+    .content { font-size: 0.75rem; padding: 12px 16px; }
+  }
 </style>

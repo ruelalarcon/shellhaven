@@ -142,4 +142,11 @@
   }
 
   .row-meta.muted { color: #2e2e42; }
+
+  @media (max-width: 767px) {
+    .browser { padding: 12px 16px; }
+    .row { padding: 12px 10px; font-size: 0.88rem; }
+    /* hide the date on small screens, keep name + size */
+    .row-meta.muted { display: none; }
+  }
 </style>

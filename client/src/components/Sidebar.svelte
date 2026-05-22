@@ -497,4 +497,22 @@
   }
 
   .logout-btn:hover { color: #6b7280; }
+
+  @media (max-width: 767px) {
+    .sidebar {
+      width: 100%;
+      border-right: none;
+      border-radius: 12px 12px 0 0;
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+
+    .service-list { max-height: none; }
+
+    /* Larger touch targets */
+    .item { padding: 10px 16px; font-size: 0.9rem; }
+    .ctrl-btn { padding: 10px 14px; font-size: 0.85rem; }
+    .ghost-btn { padding: 10px 8px; font-size: 0.8rem; }
+    .group-header { padding: 8px 16px 8px 14px; }
+  }
 </style>
