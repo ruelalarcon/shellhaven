@@ -6,6 +6,7 @@ export interface ServiceState {
   id: string;
   status: ServiceStatus;
   restartPolicy: RestartPolicy;
+  group?: string;
 }
 
 export type WsMessage =
@@ -13,4 +14,5 @@ export type WsMessage =
   | { type: "resize"; id: string; cols: number; rows: number }
   | { type: "output"; id: string; data: string }
   | { type: "state"; services: ServiceState[] }
-  | { type: "get-scrollback"; id: string };
+  | { type: "get-scrollback"; id: string }
+  | { type: "get-state" };

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { push } from "svelte-spa-router";
   import { TerminalSquare } from "@lucide/svelte";
 
@@ -7,13 +6,6 @@
   let confirm = $state("");
   let error = $state("");
   let loading = $state(false);
-
-  onMount(async () => {
-    const res = await fetch("/api/status");
-    const { configured, authenticated } = await res.json();
-    if (authenticated) { push("/"); return; }
-    if (configured) { push("/login"); return; }
-  });
 
   async function submit(e: SubmitEvent) {
     e.preventDefault();

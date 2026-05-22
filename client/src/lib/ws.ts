@@ -51,6 +51,7 @@ export function onMessage(handler: MessageHandler) {
 
 export function onOpen(handler: StateHandler) {
   openHandlers.add(handler);
+  if (socket?.readyState === WebSocket.OPEN) handler();
   return () => openHandlers.delete(handler);
 }
 

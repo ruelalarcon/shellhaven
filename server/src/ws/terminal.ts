@@ -78,6 +78,8 @@ export function setupWebSocket(wss: WebSocketServer) {
       } else if (msg.type === "get-scrollback") {
         const scrollback = getScrollback(msg.id);
         if (scrollback) send(ws, { type: "output", id: msg.id, data: scrollback });
+      } else if (msg.type === "get-state") {
+        send(ws, { type: "state", services: getServiceStates() });
       }
     });
 

@@ -12,6 +12,7 @@ const SCROLLBACK_LIMIT = 100 * 1024; // 100 KB per service
 interface ServiceEntry {
   id: string;
   restartPolicy: RestartPolicy;
+  group?: string;
   status: ServiceStatus;
   pty: pty.IPty | null;
   manualStop: boolean;
@@ -40,6 +41,15 @@ function parseRestartPolicy(scriptPath: string): RestartPolicy {
   return "unless-stopped";
 }
 
+function parseGroup(scriptPath: string): string | undefined {
+  try {
+    const content = fs.readFileSync(scriptPath, "utf8");
+    const match = content.match(/^#\s*group:\s*(.+)/m);
+    if (match) return match[1].trim();
+  } catch {}
+  return undefined;
+}
+
 function rotateLogs(id: string) {
   const latest = path.join(LOGS_DIR, `${id}.latest.log`);
   const previous = path.join(LOGS_DIR, `${id}.previous.log`);
@@ -57,6 +67,9 @@ function openLogStream(id: string): fs.WriteStream {
 function spawnService(entry: ServiceEntry) {
   const scriptPath = path.join(SERVICES_DIR, `${entry.id}.sh`);
   if (!fs.existsSync(scriptPath)) return;
+
+  entry.restartPolicy = parseRestartPolicy(scriptPath);
+  entry.group = parseGroup(scriptPath);
 
   const logStream = openLogStream(entry.id);
 
@@ -122,6 +135,7 @@ export function initServices() {
     const entry: ServiceEntry = {
       id,
       restartPolicy: parseRestartPolicy(scriptPath),
+      group: parseGroup(scriptPath),
       status: "stopped",
       pty: null,
       manualStop: false,
@@ -134,10 +148,11 @@ export function initServices() {
 }
 
 export function getServiceStates(): ServiceState[] {
-  return Array.from(services.values()).map(({ id, status, restartPolicy }) => ({
+  return Array.from(services.values()).map(({ id, status, restartPolicy, group }) => ({
     id,
     status,
     restartPolicy,
+    ...(group !== undefined && { group }),
   }));
 }
 

@@ -1,18 +1,10 @@
 <script lang="ts">
-  import { onMount } from "svelte";
   import { push } from "svelte-spa-router";
   import { TerminalSquare } from "@lucide/svelte";
 
   let password = $state("");
   let error = $state("");
   let loading = $state(false);
-
-  onMount(async () => {
-    const res = await fetch("/api/status");
-    const { configured, authenticated } = await res.json();
-    if (!configured) { push("/setup"); return; }
-    if (authenticated) { push("/"); return; }
-  });
 
   async function submit(e: SubmitEvent) {
     e.preventDefault();
