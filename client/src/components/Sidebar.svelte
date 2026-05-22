@@ -518,14 +518,13 @@
   }
 
   .global-actions {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 4px;
     padding: 4px 10px 8px;
   }
 
   .ghost-btn {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -542,6 +541,7 @@
   }
 
   .ghost-btn:hover { border-color: #2e2e3e; color: #7c8494; background: #18181e; }
+  .ghost-btn.rescan { grid-column: 1 / -1; }
   .ghost-btn.rescan:hover { border-color: #3a2e4a; color: #b08cda; background: #18121e; }
 
   .logout-row { padding: 0 10px 2px; }
