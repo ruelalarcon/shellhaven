@@ -1,5 +1,6 @@
 import * as pty from "node-pty";
 import * as fs from "fs";
+import * as zlib from "zlib";
 import * as path from "path";
 import * as os from "os";
 import { execSync } from "child_process";
@@ -9,11 +10,13 @@ const SERVICES_DIR = path.join(os.homedir(), "services");
 const LOGS_DIR = path.join(SERVICES_DIR, "logs");
 const RESTART_DELAY_MS = 3000;
 const SCROLLBACK_LIMIT = 100 * 1024; // 100 KB per service
+const DEFAULT_LOG_FOLDER_LIMIT = 25 * 1024 * 1024; // 25 MB
 
 interface ServiceEntry {
   id: string;
   restartPolicy: RestartPolicy;
   group?: string;
+  logFolderLimit: number;
   status: ServiceStatus;
   pty: pty.IPty | null;
   manualStop: boolean;
@@ -111,28 +114,95 @@ function parseGroup(scriptPath: string): string | undefined {
   return undefined;
 }
 
-function rotateLogs(id: string) {
-  const latest = path.join(LOGS_DIR, `${id}.latest.log`);
-  const previous = path.join(LOGS_DIR, `${id}.previous.log`);
-  if (fs.existsSync(latest)) {
-    fs.renameSync(latest, previous);
+function parseLogFolderLimit(scriptPath: string): number {
+  try {
+    const content = fs.readFileSync(scriptPath, "utf8");
+    const match = content.match(/^#\s*log-folder-limit:\s*(\d+(?:\.\d+)?)\s*(mb|gb|kb)?/im);
+    if (match) {
+      const value = parseFloat(match[1]);
+      const unit = (match[2] ?? "mb").toLowerCase();
+      if (unit === "kb") return Math.floor(value * 1024);
+      if (unit === "gb") return Math.floor(value * 1024 * 1024 * 1024);
+      return Math.floor(value * 1024 * 1024);
+    }
+  } catch {}
+  return DEFAULT_LOG_FOLDER_LIMIT;
+}
+
+function logDir(id: string): string {
+  return path.join(LOGS_DIR, id);
+}
+
+function timestamp(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_` +
+    `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+}
+
+function dirSize(dir: string): number {
+  return fs.readdirSync(dir).reduce((total, file) => {
+    try { return total + fs.statSync(path.join(dir, file)).size; } catch { return total; }
+  }, 0);
+}
+
+function pruneLogDir(dir: string, limit: number) {
+  const files = fs.readdirSync(dir)
+    .filter((f) => f !== "latest.log")
+    .map((f) => ({ name: f, mtime: fs.statSync(path.join(dir, f)).mtimeMs }))
+    .sort((a, b) => a.mtime - b.mtime); // oldest first
+
+  let size = dirSize(dir);
+  for (const file of files) {
+    if (size <= limit) break;
+    const fp = path.join(dir, file.name);
+    size -= fs.statSync(fp).size;
+    fs.unlinkSync(fp);
   }
 }
 
-function openLogStream(id: string): fs.WriteStream {
-  fs.mkdirSync(LOGS_DIR, { recursive: true });
-  rotateLogs(id);
-  return fs.createWriteStream(path.join(LOGS_DIR, `${id}.latest.log`), { flags: "a" });
+function rotateLogs(id: string, limit: number): Promise<void> {
+  const dir = logDir(id);
+  fs.mkdirSync(dir, { recursive: true });
+
+  const latest = path.join(dir, "latest.log");
+  if (!fs.existsSync(latest)) return Promise.resolve();
+  if (fs.statSync(latest).size === 0) {
+    fs.unlinkSync(latest);
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const dest = path.join(dir, `${timestamp()}.log.gz`);
+    const src = fs.createReadStream(latest);
+    const gz = zlib.createGzip();
+    const out = fs.createWriteStream(dest);
+    src.pipe(gz).pipe(out);
+    out.on("finish", () => {
+      fs.unlinkSync(latest);
+      pruneLogDir(dir, limit);
+      resolve();
+    });
+    out.on("error", () => resolve()); // don't block spawn on compression failure
+  });
 }
 
-function spawnService(entry: ServiceEntry) {
+async function openLogStream(id: string, limit: number): Promise<fs.WriteStream> {
+  const dir = logDir(id);
+  fs.mkdirSync(dir, { recursive: true });
+  await rotateLogs(id, limit);
+  return fs.createWriteStream(path.join(dir, "latest.log"), { flags: "a" });
+}
+
+async function spawnService(entry: ServiceEntry) {
   const scriptPath = path.join(SERVICES_DIR, `${entry.id}.sh`);
   if (!fs.existsSync(scriptPath)) return;
 
   entry.restartPolicy = parseRestartPolicy(scriptPath);
   entry.group = parseGroup(scriptPath);
+  entry.logFolderLimit = parseLogFolderLimit(scriptPath);
 
-  const logStream = openLogStream(entry.id);
+  const logStream = await openLogStream(entry.id, entry.logFolderLimit);
 
   const proc = pty.spawn("bash", ["-l", scriptPath], {
     name: "xterm-256color",
@@ -180,7 +250,7 @@ function spawnService(entry: ServiceEntry) {
 
 export function initServices() {
   initBtop();
-  fs.mkdirSync(LOGS_DIR, { recursive: true });
+  fs.mkdirSync(LOGS_DIR, { recursive: true }); // ensure base logs dir exists
 
   if (!fs.existsSync(SERVICES_DIR)) {
     fs.mkdirSync(SERVICES_DIR, { recursive: true });
@@ -198,6 +268,7 @@ export function initServices() {
       id,
       restartPolicy: parseRestartPolicy(scriptPath),
       group: parseGroup(scriptPath),
+      logFolderLimit: parseLogFolderLimit(scriptPath),
       status: "stopped",
       pty: null,
       manualStop: false,
