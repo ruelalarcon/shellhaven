@@ -1,0 +1,14 @@
+[Unit]
+Description=Terminal Dashboard
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/node /home/you/terminal-dashboard/server/dist/index.js
+WorkingDirectory=/home/you/terminal-dashboard
+Restart=always
+User=you
+Environment=NODE_ENV=production
+Environment=HOME=/home/you
+
+[Install]
+WantedBy=multi-user.target
