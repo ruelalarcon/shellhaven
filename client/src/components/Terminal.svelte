@@ -52,7 +52,12 @@
       if (msg.type === "output" && msg.id === id) term.write(msg.data);
     });
 
-    const removeOpen = onOpen(() => fitAndResize());
+    const removeOpen = onOpen(() => {
+      fitAndResize();
+      send({ type: "get-scrollback", id });
+    });
+
+    send({ type: "get-scrollback", id });
 
     const ro = new ResizeObserver(() => {
       if (visible) fitAndResize();

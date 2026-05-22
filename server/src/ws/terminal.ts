@@ -51,8 +51,6 @@ export function setupWebSocket(wss: WebSocketServer) {
       };
       outputHandlers.set(svc.id, handler);
       subscribeToOutput(svc.id, handler);
-      const scrollback = getScrollback(svc.id);
-      if (scrollback) send(ws, { type: "output", id: svc.id, data: scrollback });
     }
 
     send(ws, { type: "state", services: getServiceStates() });
@@ -77,6 +75,9 @@ export function setupWebSocket(wss: WebSocketServer) {
         } else {
           resizeService(msg.id, msg.cols, msg.rows);
         }
+      } else if (msg.type === "get-scrollback") {
+        const scrollback = getScrollback(msg.id);
+        if (scrollback) send(ws, { type: "output", id: msg.id, data: scrollback });
       }
     });
 

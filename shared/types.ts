@@ -12,4 +12,5 @@ export type WsMessage =
   | { type: "input"; id: string; data: string }
   | { type: "resize"; id: string; cols: number; rows: number }
   | { type: "output"; id: string; data: string }
-  | { type: "state"; services: ServiceState[] };
+  | { type: "state"; services: ServiceState[] }
+  | { type: "get-scrollback"; id: string };
