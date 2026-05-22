@@ -48,6 +48,15 @@
       send({ type: "input", id, data });
     });
 
+    term.attachCustomKeyEventHandler((e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "C" && e.type === "keydown") {
+        const selection = term.getSelection();
+        if (selection) navigator.clipboard.writeText(selection);
+        return false;
+      }
+      return true;
+    });
+
     const removeMsg = onMessage((msg) => {
       if (msg.type === "output" && msg.id === id) term.write(msg.data);
     });
