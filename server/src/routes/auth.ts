@@ -5,14 +5,14 @@ import crypto from "crypto";
 import path from "path";
 import { getConfig, saveConfig } from "../config";
 import { verifyToken } from "../middleware/auth";
-import { isBtopAvailable } from "../services/serviceManager";
+import { isBtopAvailable } from "../services/shellManager";
 
 const router = Router();
 
 router.get("/api/status", (req: Request, res: Response) => {
   const config = getConfig();
   const configured = config !== null;
-  const authenticated = configured && verifyToken(req.cookies?.td_session ?? "");
+  const authenticated = configured && verifyToken(req.cookies?.sh_session ?? "");
   res.json({ configured, authenticated, btop: isBtopAvailable() });
 });
 
@@ -49,7 +49,7 @@ router.post("/login", async (req: Request, res: Response) => {
   const valid = await bcrypt.compare(password || "", config.passwordHash);
   if (!valid) { res.status(401).json({ error: "Invalid password." }); return; }
   const token = jwt.sign({}, config.jwtSecret, { expiresIn: "7d" });
-  res.cookie("td_session", token, {
+  res.cookie("sh_session", token, {
     httpOnly: true,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     sameSite: "strict",
@@ -58,7 +58,7 @@ router.post("/login", async (req: Request, res: Response) => {
 });
 
 router.post("/logout", (req: Request, res: Response) => {
-  res.clearCookie("td_session");
+  res.clearCookie("sh_session");
   res.json({ ok: true });
 });
 

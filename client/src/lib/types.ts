@@ -1,4 +1,4 @@
-export type { RestartPolicy, ServiceState, ServiceStatus, WsMessage, LogEntry, ServiceStats } from "~shared/types";
+export type { RestartPolicy, ShellState, ShellStatus, WsMessage, LogEntry, ShellStats } from "~shared/types";
 
 export type PaneView =
   | { type: "terminal" }

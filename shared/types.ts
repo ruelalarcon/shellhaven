@@ -1,10 +1,10 @@
 export type RestartPolicy = "always" | "unless-stopped" | "never";
 
-export type ServiceStatus = "running" | "stopped" | "crashed";
+export type ShellStatus = "running" | "stopped" | "crashed";
 
-export interface ServiceState {
+export interface ShellState {
   id: string;
-  status: ServiceStatus;
+  status: ShellStatus;
   restartPolicy: RestartPolicy;
   group?: string;
 }
@@ -15,7 +15,7 @@ export interface LogEntry {
   mtime: number;
 }
 
-export interface ServiceStats {
+export interface ShellStats {
   cpu: number;   // percent, 0-100
   mem: number;   // bytes
 }
@@ -24,7 +24,7 @@ export type WsMessage =
   | { type: "input"; id: string; data: string }
   | { type: "resize"; id: string; cols: number; rows: number }
   | { type: "output"; id: string; data: string }
-  | { type: "state"; services: ServiceState[] }
-  | { type: "stats"; stats: Record<string, ServiceStats> }
+  | { type: "state"; shells: ShellState[] }
+  | { type: "stats"; stats: Record<string, ShellStats> }
   | { type: "get-scrollback"; id: string }
   | { type: "get-state" };

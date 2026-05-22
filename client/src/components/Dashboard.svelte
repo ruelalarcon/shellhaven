@@ -1,25 +1,25 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { push } from "svelte-spa-router";
-  import type { ServiceState, PaneView } from "../lib/types";
+  import type { ShellState, PaneView } from "../lib/types";
   import { onMessage, onOpen, onClose, send } from "../lib/ws";
   import Sidebar from "./Sidebar.svelte";
   import TerminalPane from "./TerminalPane.svelte";
   import { TerminalSquare, Menu, Wifi, WifiOff } from "@lucide/svelte";
-  import type { ServiceStats } from "../lib/types";
+  import type { ShellStats } from "../lib/types";
 
-  let services = $state<ServiceState[]>([]);
+  let shells = $state<ShellState[]>([]);
   let selectedId = $state("shell");
   let connected = $state(false);
   let btop = $state(false);
   let view = $state<PaneView>({ type: "terminal" });
   let sidebarOpen = $state(false);
-  let stats = $state<Record<string, ServiceStats>>({});
+  let stats = $state<Record<string, ShellStats>>({});
 
   let terminalIds = $derived([
     "shell",
     ...(btop ? ["btop"] : []),
-    ...services.map((s) => s.id),
+    ...shells.map((s) => s.id),
   ]);
 
   function select(id: string) {
@@ -34,7 +34,7 @@
 
   onMount(() => {
     const removeMsg = onMessage((msg) => {
-      if (msg.type === "state") services = msg.services;
+      if (msg.type === "state") shells = msg.shells;
       else if (msg.type === "stats") stats = msg.stats;
     });
     const removeOpen = onOpen(() => { connected = true; send({ type: "get-state" }); });
@@ -57,7 +57,7 @@
   <div class="mobile-bar">
     <div class="mobile-brand">
       <TerminalSquare size={14} />
-      <span>services</span>
+      <span>shellhaven</span>
     </div>
     <div class="mobile-right">
       <span class="mobile-conn" class:connected>
@@ -75,7 +75,7 @@
   <div class="layout">
     <div class="sidebar-wrap" class:open={sidebarOpen}>
       <Sidebar
-        {services}
+        {shells}
         {selectedId}
         {connected}
         {btop}
@@ -87,7 +87,7 @@
     <TerminalPane
       ids={terminalIds}
       {selectedId}
-      {services}
+      {shells}
       {view}
       onviewchange={(v) => (view = v)}
     />

@@ -7,7 +7,7 @@ import authRouter from "./routes/auth";
 import apiRouter from "./routes/api";
 import { requireAuth } from "./middleware/auth";
 import { getConfig } from "./config";
-import { initServices } from "./services/serviceManager";
+import { initShells } from "./services/shellManager";
 import { setupWebSocket } from "./ws/terminal";
 
 const app = express();
@@ -29,11 +29,11 @@ app.get("*", (req, res) => {
 });
 
 setupWebSocket(wss);
-initServices();
+initShells();
 
 const PORT = parseInt(process.env.PORT || "7456", 10);
 const HOST = process.env.HOST || "localhost";
 
 server.listen(PORT, HOST, () => {
-  console.log(`Terminal Dashboard running at http://${HOST}:${PORT}`);
+  console.log(`ShellHaven running at http://${HOST}:${PORT}`);
 });

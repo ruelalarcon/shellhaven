@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  let { serviceId, filename }: {
-    serviceId: string;
+  let { shellId, filename }: {
+    shellId: string;
     filename: string;
   } = $props();
 
@@ -15,7 +15,7 @@
     loading = true;
     error = "";
     try {
-      const res = await fetch(`/api/services/${serviceId}/logs/${encodeURIComponent(filename)}`);
+      const res = await fetch(`/api/shells/${shellId}/logs/${encodeURIComponent(filename)}`);
       if (!res.ok) { error = `Failed to load: ${res.status}`; return; }
       content = await res.text();
     } catch {

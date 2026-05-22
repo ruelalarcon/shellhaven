@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { ServiceState, ServiceStats } from "../lib/types";
+  import type { ShellState, ShellStats } from "../lib/types";
   import { Terminal, Circle } from "@lucide/svelte";
 
   let { service, selected, onclick, stats }: {
-    service: ServiceState;
+    service: ShellState;
     selected: boolean;
     onclick: () => void;
-    stats: ServiceStats | undefined;
+    stats: ShellStats | undefined;
   } = $props();
 
   let isShell = $derived(service.id === "shell");

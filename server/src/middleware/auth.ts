@@ -9,7 +9,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     return;
   }
 
-  const token = req.cookies?.td_session;
+  const token = req.cookies?.sh_session;
   if (!token) {
     res.status(401).json({ error: "Unauthorized." });
     return;

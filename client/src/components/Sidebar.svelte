@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ServiceState, ServiceStats } from "../lib/types";
+  import type { ShellState, ShellStats } from "../lib/types";
   import ServiceItem from "./ServiceItem.svelte";
   import {
     TerminalSquare,
@@ -16,12 +16,12 @@
   } from "@lucide/svelte";
   import { push } from "svelte-spa-router";
 
-  let { services, selectedId, connected, btop, stats, onselect, openLogs }: {
-    services: ServiceState[];
+  let { shells, selectedId, connected, btop, stats, onselect, openLogs }: {
+    shells: ShellState[];
     selectedId: string;
     connected: boolean;
     btop: boolean;
-    stats: Record<string, ServiceStats>;
+    stats: Record<string, ShellStats>;
     onselect: (id: string) => void;
     openLogs: (id: string) => void;
   } = $props();
@@ -42,23 +42,23 @@
     collapsedGroups = next;
   }
 
-  // Filter services by query, then bucket into groups
+  // Filter shells by query, then bucket into groups
   let filtered = $derived(
     query.trim()
-      ? services.filter((s) => s.id.toLowerCase().includes(query.trim().toLowerCase()))
-      : services
+      ? shells.filter((s) => s.id.toLowerCase().includes(query.trim().toLowerCase()))
+      : shells
   );
 
-  // [ [groupName | undefined, services[]] ]
+  // [ [groupName | undefined, shells[]] ]
   let grouped = $derived.by(() => {
-    const map = new Map<string, ServiceState[]>();
+    const map = new Map<string, ShellState[]>();
     for (const svc of filtered) {
       const key = svc.group ?? "";
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(svc);
     }
     // ungrouped first, then named groups alphabetically
-    const entries: [string, ServiceState[]][] = [];
+    const entries: [string, ShellState[]][] = [];
     if (map.has("")) entries.push(["", map.get("")!]);
     for (const [k, v] of [...map.entries()].filter(([k]) => k !== "").sort(([a], [b]) => a.localeCompare(b))) {
       entries.push([k, v]);
@@ -75,7 +75,7 @@
     push("/login");
   }
 
-  let selectedService = $derived(services.find((s) => s.id === selectedId));
+  let selectedShell = $derived(shells.find((s) => s.id === selectedId));
 
   let shellVisible = $derived(
     !query.trim() || "shell".includes(query.trim().toLowerCase())
@@ -91,7 +91,7 @@
   <div class="header">
     <div class="brand">
       <TerminalSquare size={16} class="brand-icon" />
-      <span class="brand-name">services</span>
+      <span class="brand-name">shellhaven</span>
     </div>
     <div class="conn-indicator" class:connected>
       {#if connected}
@@ -116,7 +116,7 @@
     {/if}
   </div>
 
-  <!-- Service list -->
+  <!-- Shell list -->
   <nav class="service-list">
     <!-- Shell always first, filtered by query -->
     {#if shellVisible}
@@ -140,7 +140,7 @@
       </button>
     {/if}
 
-    <!-- Grouped services -->
+    <!-- Grouped shells -->
     {#each grouped as [group, svcs]}
       {#if group === ""}
         <!-- Ungrouped: render flat -->
@@ -187,8 +187,8 @@
     {/if}
   </nav>
 
-  <!-- Selected service controls -->
-  {#if selectedId !== "shell" && selectedService}
+  <!-- Selected shell controls -->
+  {#if selectedId !== "shell" && selectedShell}
     <div class="control-section">
       <div class="control-label">
         <ChevronRight size={10} />
@@ -212,13 +212,13 @@
         <button class="ctrl-btn logs" onclick={() => openLogs(selectedId)}>
           <ScrollText size={12} /><span>logs</span>
         </button>
-        <button class="ctrl-btn start" onclick={() => apiCall(`/api/services/${selectedId}/start`)}>
+        <button class="ctrl-btn start" onclick={() => apiCall(`/api/shells/${selectedId}/start`)}>
           <Play size={12} /><span>start</span>
         </button>
-        <button class="ctrl-btn stop" onclick={() => apiCall(`/api/services/${selectedId}/stop`)}>
+        <button class="ctrl-btn stop" onclick={() => apiCall(`/api/shells/${selectedId}/stop`)}>
           <Square size={12} /><span>stop</span>
         </button>
-        <button class="ctrl-btn restart" onclick={() => apiCall(`/api/services/${selectedId}/restart`)}>
+        <button class="ctrl-btn restart" onclick={() => apiCall(`/api/shells/${selectedId}/restart`)}>
           <RotateCw size={12} /><span>restart</span>
         </button>
       </div>
@@ -230,10 +230,10 @@
   <!-- Bottom actions -->
   <div class="bottom-section">
     <div class="global-actions">
-      <button class="ghost-btn" onclick={() => apiCall("/api/services/start-all")}>
+      <button class="ghost-btn" onclick={() => apiCall("/api/shells/start-all")}>
         <Play size={11} /><span>start all</span>
       </button>
-      <button class="ghost-btn" onclick={() => apiCall("/api/services/stop-all")}>
+      <button class="ghost-btn" onclick={() => apiCall("/api/shells/stop-all")}>
         <Square size={11} /><span>stop all</span>
       </button>
     </div>
@@ -322,7 +322,7 @@
 
   .clear-search:hover { color: #6b7280; }
 
-  /* Service list */
+  /* Shell list */
   .service-list {
     flex: 1;
     overflow-y: auto;

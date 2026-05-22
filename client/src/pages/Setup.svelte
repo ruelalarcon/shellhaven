@@ -31,7 +31,7 @@
 <div class="page">
   <div class="wordmark">
     <TerminalSquare size={14} />
-    terminal dashboard
+    shellhaven
   </div>
   <div class="card">
     <div class="card-title">initial setup</div>

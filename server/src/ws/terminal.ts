@@ -5,12 +5,12 @@ import * as os from "os";
 import pidusage from "pidusage";
 import { verifyToken } from "../middleware/auth";
 import {
-  getServiceStates,
+  getShellStates,
   getScrollback,
-  writeToService,
-  resizeService,
-  subscribeToOutput,
-  unsubscribeFromOutput,
+  writeToShell,
+  resizeShell,
+  subscribeToShellOutput,
+  unsubscribeFromShellOutput,
   setStateChangeCallback,
   isBtopAvailable,
   getBtopScrollback,
@@ -18,22 +18,22 @@ import {
   resizeBtop,
   subscribeToBtop,
   unsubscribeFromBtop,
-  getRunningPids,
-} from "../services/serviceManager";
-import { ServiceStats, WsMessage } from "../../../shared/types";
+  getRunningShellPids,
+} from "../services/shellManager";
+import { ShellStats, WsMessage } from "../../../shared/types";
 
 const connectedClients = new Set<WebSocket>();
 
 const STATS_INTERVAL_MS = 2000;
 
 async function broadcastStats() {
-  const pids = getRunningPids();
+  const pids = getRunningShellPids();
   if (pids.size === 0 || connectedClients.size === 0) return;
 
   try {
     const pidArray = Array.from(pids.values());
     const usage = await pidusage(pidArray);
-    const stats: Record<string, ServiceStats> = {};
+    const stats: Record<string, ShellStats> = {};
     for (const [id, pid] of pids) {
       const u = usage[pid];
       if (u) stats[id] = { cpu: u.cpu, mem: u.memory };
@@ -68,7 +68,7 @@ export function setupWebSocket(wss: WebSocketServer) {
 
   wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     const cookies = parseCookies(req.headers.cookie || "");
-    if (!verifyToken(cookies.td_session || "")) {
+    if (!verifyToken(cookies.sh_session || "")) {
       ws.close(4001, "Unauthorized");
       return;
     }
@@ -79,12 +79,12 @@ export function setupWebSocket(wss: WebSocketServer) {
 
     const outputHandlers = new Map<string, (data: string) => void>();
 
-    for (const svc of getServiceStates()) {
+    for (const svc of getShellStates()) {
       const handler = (data: string) => {
         send(ws, { type: "output", id: svc.id, data });
       };
       outputHandlers.set(svc.id, handler);
-      subscribeToOutput(svc.id, handler);
+      subscribeToShellOutput(svc.id, handler);
     }
 
     let btopHandler: ((data: string) => void) | null = null;
@@ -93,7 +93,7 @@ export function setupWebSocket(wss: WebSocketServer) {
       subscribeToBtop(btopHandler);
     }
 
-    send(ws, { type: "state", services: getServiceStates() });
+    send(ws, { type: "state", shells: getShellStates() });
 
     ws.on("message", (raw) => {
       let msg: WsMessage;
@@ -109,7 +109,7 @@ export function setupWebSocket(wss: WebSocketServer) {
         } else if (msg.id === "btop") {
           writeToBtop(msg.data);
         } else {
-          writeToService(msg.id, msg.data);
+          writeToShell(msg.id, msg.data);
         }
       } else if (msg.type === "resize") {
         if (msg.id === "shell") {
@@ -117,13 +117,13 @@ export function setupWebSocket(wss: WebSocketServer) {
         } else if (msg.id === "btop") {
           resizeBtop(msg.cols, msg.rows);
         } else {
-          resizeService(msg.id, msg.cols, msg.rows);
+          resizeShell(msg.id, msg.cols, msg.rows);
         }
       } else if (msg.type === "get-scrollback") {
         const scrollback = msg.id === "btop" ? getBtopScrollback() : getScrollback(msg.id);
         if (scrollback) send(ws, { type: "output", id: msg.id, data: scrollback });
       } else if (msg.type === "get-state") {
-        send(ws, { type: "state", services: getServiceStates() });
+        send(ws, { type: "state", shells: getShellStates() });
       }
     });
 
@@ -131,7 +131,7 @@ export function setupWebSocket(wss: WebSocketServer) {
       connectedClients.delete(ws);
       shell.pty.kill();
       for (const [id, handler] of outputHandlers) {
-        unsubscribeFromOutput(id, handler);
+        unsubscribeFromShellOutput(id, handler);
       }
       if (btopHandler) unsubscribeFromBtop(btopHandler);
     });
@@ -161,7 +161,7 @@ function send(ws: WebSocket, msg: WsMessage) {
 }
 
 export function broadcastState() {
-  const msg: WsMessage = { type: "state", services: getServiceStates() };
+  const msg: WsMessage = { type: "state", shells: getShellStates() };
   const encoded = JSON.stringify(msg);
   for (const ws of connectedClients) {
     if (ws.readyState === WebSocket.OPEN) {

@@ -2,7 +2,7 @@
   import Terminal from "./Terminal.svelte";
   import LogBrowser from "./LogBrowser.svelte";
   import LogViewer from "./LogViewer.svelte";
-  import type { ServiceState, PaneView } from "../lib/types";
+  import type { ShellState, PaneView } from "../lib/types";
   import {
     Trash2,
     Terminal as TerminalIcon,
@@ -14,10 +14,10 @@
     Download,
   } from "@lucide/svelte";
 
-  let { ids, selectedId, services, view, onviewchange }: {
+  let { ids, selectedId, shells, view, onviewchange }: {
     ids: string[];
     selectedId: string;
-    services: ServiceState[];
+    shells: ShellState[];
     view: PaneView;
     onviewchange: (v: PaneView) => void;
   } = $props();
@@ -26,18 +26,18 @@
 
   function getStatus(id: string): string {
     if (id === "shell") return "running";
-    return services.find((s) => s.id === id)?.status ?? "stopped";
+    return shells.find((s) => s.id === id)?.status ?? "stopped";
   }
 
   function getRestartPolicy(id: string): string {
     if (id === "shell") return "";
-    return services.find((s) => s.id === id)?.restartPolicy ?? "";
+    return shells.find((s) => s.id === id)?.restartPolicy ?? "";
   }
 
-  let isService = $derived(selectedId !== "shell" && selectedId !== "btop");
+  let isManagedShell = $derived(selectedId !== "shell" && selectedId !== "btop");
 
   function downloadUrl(filename: string): string {
-    return `/api/services/${selectedId}/logs/${encodeURIComponent(filename)}`;
+    return `/api/shells/${selectedId}/logs/${encodeURIComponent(filename)}`;
   }
 </script>
 
@@ -59,7 +59,7 @@
       <!-- Breadcrumb -->
       {#if view.type === "terminal"}
         <span class="crumb-current">{selectedId}</span>
-        {#if isService}
+        {#if isManagedShell}
           {@const status = getStatus(selectedId)}
           {@const policy = getRestartPolicy(selectedId)}
           <span class="status-pill {status}">
@@ -111,19 +111,19 @@
     {/each}
 
     <!-- Log browser -->
-    {#if view.type === "logs" && isService}
+    {#if view.type === "logs" && isManagedShell}
       <div class="slot">
         <LogBrowser
-          serviceId={selectedId}
+          shellId={selectedId}
           onopen={(filename) => onviewchange({ type: "log-file", filename })}
         />
       </div>
     {/if}
 
     <!-- Log file viewer -->
-    {#if view.type === "log-file" && isService}
+    {#if view.type === "log-file" && isManagedShell}
       <div class="slot">
-        <LogViewer serviceId={selectedId} filename={view.filename} />
+        <LogViewer shellId={selectedId} filename={view.filename} />
       </div>
     {/if}
   </div>

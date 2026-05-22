@@ -4,27 +4,27 @@ import * as zlib from "zlib";
 import * as path from "path";
 import * as os from "os";
 import { execSync } from "child_process";
-import { RestartPolicy, ServiceState, ServiceStatus } from "../../../shared/types";
+import { RestartPolicy, ShellState, ShellStatus } from "../../../shared/types";
 
-const SERVICES_DIR = path.join(os.homedir(), "services");
-const LOGS_DIR = path.join(SERVICES_DIR, "logs");
+const SHELLS_DIR = path.join(os.homedir(), "shells");
+const LOGS_DIR = path.join(SHELLS_DIR, "logs");
 const RESTART_DELAY_MS = 3000;
-const SCROLLBACK_LIMIT = 100 * 1024; // 100 KB per service
+const SCROLLBACK_LIMIT = 100 * 1024; // 100 KB per shell
 const DEFAULT_LOG_FOLDER_LIMIT = 25 * 1024 * 1024; // 25 MB
 
-interface ServiceEntry {
+interface ShellEntry {
   id: string;
   restartPolicy: RestartPolicy;
   group?: string;
   logFolderLimit: number;
-  status: ServiceStatus;
+  status: ShellStatus;
   pty: pty.IPty | null;
   manualStop: boolean;
   outputListeners: Set<(data: string) => void>;
   scrollback: string;
 }
 
-const services = new Map<string, ServiceEntry>();
+const shells = new Map<string, ShellEntry>();
 
 interface BtopSession {
   pty: pty.IPty;
@@ -194,8 +194,8 @@ async function openLogStream(id: string, limit: number): Promise<fs.WriteStream>
   return fs.createWriteStream(path.join(dir, "latest.log"), { flags: "a" });
 }
 
-async function spawnService(entry: ServiceEntry) {
-  const scriptPath = path.join(SERVICES_DIR, `${entry.id}.sh`);
+async function spawnShell(entry: ShellEntry) {
+  const scriptPath = path.join(SHELLS_DIR, `${entry.id}.sh`);
   if (!fs.existsSync(scriptPath)) return;
 
   entry.restartPolicy = parseRestartPolicy(scriptPath);
@@ -242,29 +242,29 @@ async function spawnService(entry: ServiceEntry) {
     if (shouldRestart) {
       setTimeout(() => {
         entry.manualStop = false;
-        spawnService(entry);
+        spawnShell(entry);
       }, RESTART_DELAY_MS);
     }
   });
 }
 
-export function initServices() {
+export function initShells() {
   initBtop();
   fs.mkdirSync(LOGS_DIR, { recursive: true }); // ensure base logs dir exists
 
-  if (!fs.existsSync(SERVICES_DIR)) {
-    fs.mkdirSync(SERVICES_DIR, { recursive: true });
+  if (!fs.existsSync(SHELLS_DIR)) {
+    fs.mkdirSync(SHELLS_DIR, { recursive: true });
     return;
   }
 
   const scripts = fs
-    .readdirSync(SERVICES_DIR)
+    .readdirSync(SHELLS_DIR)
     .filter((f) => f.endsWith(".sh"))
     .map((f) => f.replace(/\.sh$/, ""));
 
   for (const id of scripts) {
-    const scriptPath = path.join(SERVICES_DIR, `${id}.sh`);
-    const entry: ServiceEntry = {
+    const scriptPath = path.join(SHELLS_DIR, `${id}.sh`);
+    const entry: ShellEntry = {
       id,
       restartPolicy: parseRestartPolicy(scriptPath),
       group: parseGroup(scriptPath),
@@ -275,13 +275,13 @@ export function initServices() {
       outputListeners: new Set(),
       scrollback: "",
     };
-    services.set(id, entry);
-    spawnService(entry);
+    shells.set(id, entry);
+    spawnShell(entry);
   }
 }
 
-export function getServiceStates(): ServiceState[] {
-  return Array.from(services.values()).map(({ id, status, restartPolicy, group }) => ({
+export function getShellStates(): ShellState[] {
+  return Array.from(shells.values()).map(({ id, status, restartPolicy, group }) => ({
     id,
     status,
     restartPolicy,
@@ -289,45 +289,45 @@ export function getServiceStates(): ServiceState[] {
   }));
 }
 
-export function startService(id: string): boolean {
-  const entry = services.get(id);
+export function startShell(id: string): boolean {
+  const entry = shells.get(id);
   if (!entry || entry.status === "running") return false;
   entry.manualStop = false;
-  spawnService(entry);
+  spawnShell(entry);
   return true;
 }
 
-export function stopService(id: string): boolean {
-  const entry = services.get(id);
+export function stopShell(id: string): boolean {
+  const entry = shells.get(id);
   if (!entry || entry.status !== "running" || !entry.pty) return false;
   entry.manualStop = true;
   entry.pty.kill();
   return true;
 }
 
-export function restartService(id: string): boolean {
-  const entry = services.get(id);
+export function restartShell(id: string): boolean {
+  const entry = shells.get(id);
   if (!entry) return false;
   entry.manualStop = false;
   if (entry.pty) {
     entry.pty.kill();
   } else {
-    spawnService(entry);
+    spawnShell(entry);
   }
   return true;
 }
 
-export function startAll() {
-  for (const entry of services.values()) {
+export function startAllShells() {
+  for (const entry of shells.values()) {
     if (entry.status !== "running") {
       entry.manualStop = false;
-      spawnService(entry);
+      spawnShell(entry);
     }
   }
 }
 
-export function stopAll() {
-  for (const entry of services.values()) {
+export function stopAllShells() {
+  for (const entry of shells.values()) {
     if (entry.status === "running" && entry.pty) {
       entry.manualStop = true;
       entry.pty.kill();
@@ -335,29 +335,29 @@ export function stopAll() {
   }
 }
 
-export function writeToService(id: string, data: string) {
-  services.get(id)?.pty?.write(data);
+export function writeToShell(id: string, data: string) {
+  shells.get(id)?.pty?.write(data);
 }
 
-export function resizeService(id: string, cols: number, rows: number) {
-  services.get(id)?.pty?.resize(cols, rows);
+export function resizeShell(id: string, cols: number, rows: number) {
+  shells.get(id)?.pty?.resize(cols, rows);
 }
 
 export function getScrollback(id: string): string {
-  return services.get(id)?.scrollback ?? "";
+  return shells.get(id)?.scrollback ?? "";
 }
 
-export function subscribeToOutput(id: string, listener: (data: string) => void) {
-  services.get(id)?.outputListeners.add(listener);
+export function subscribeToShellOutput(id: string, listener: (data: string) => void) {
+  shells.get(id)?.outputListeners.add(listener);
 }
 
-export function unsubscribeFromOutput(id: string, listener: (data: string) => void) {
-  services.get(id)?.outputListeners.delete(listener);
+export function unsubscribeFromShellOutput(id: string, listener: (data: string) => void) {
+  shells.get(id)?.outputListeners.delete(listener);
 }
 
-export function getRunningPids(): Map<string, number> {
+export function getRunningShellPids(): Map<string, number> {
   const pids = new Map<string, number>();
-  for (const [id, entry] of services) {
+  for (const [id, entry] of shells) {
     if (entry.status === "running" && entry.pty) {
       pids.set(id, entry.pty.pid);
     }

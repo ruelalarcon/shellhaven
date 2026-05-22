@@ -4,48 +4,48 @@ import * as path from "path";
 import * as os from "os";
 import * as zlib from "zlib";
 import {
-  startService,
-  stopService,
-  restartService,
-  startAll,
-  stopAll,
-  getServiceStates,
-} from "../services/serviceManager";
+  startShell,
+  stopShell,
+  restartShell,
+  startAllShells,
+  stopAllShells,
+  getShellStates,
+} from "../services/shellManager";
 
-const LOGS_DIR = path.join(os.homedir(), "services", "logs");
+const LOGS_DIR = path.join(os.homedir(), "shells", "logs");
 
 const router = Router();
 
-router.get("/services", (req: Request, res: Response) => {
-  res.json(getServiceStates());
+router.get("/shells", (req: Request, res: Response) => {
+  res.json(getShellStates());
 });
 
-router.post("/services/start-all", (req: Request, res: Response) => {
-  startAll();
+router.post("/shells/start-all", (req: Request, res: Response) => {
+  startAllShells();
   res.json({ ok: true });
 });
 
-router.post("/services/stop-all", (req: Request, res: Response) => {
-  stopAll();
+router.post("/shells/stop-all", (req: Request, res: Response) => {
+  stopAllShells();
   res.json({ ok: true });
 });
 
-router.post("/services/:id/start", (req: Request, res: Response) => {
-  const ok = startService(req.params.id);
+router.post("/shells/:id/start", (req: Request, res: Response) => {
+  const ok = startShell(req.params.id);
   res.json({ ok });
 });
 
-router.post("/services/:id/stop", (req: Request, res: Response) => {
-  const ok = stopService(req.params.id);
+router.post("/shells/:id/stop", (req: Request, res: Response) => {
+  const ok = stopShell(req.params.id);
   res.json({ ok });
 });
 
-router.post("/services/:id/restart", (req: Request, res: Response) => {
-  const ok = restartService(req.params.id);
+router.post("/shells/:id/restart", (req: Request, res: Response) => {
+  const ok = restartShell(req.params.id);
   res.json({ ok });
 });
 
-router.get("/services/:id/logs", (req: Request, res: Response) => {
+router.get("/shells/:id/logs", (req: Request, res: Response) => {
   const dir = path.join(LOGS_DIR, req.params.id);
   if (!fs.existsSync(dir)) { res.json([]); return; }
 
@@ -64,7 +64,7 @@ router.get("/services/:id/logs", (req: Request, res: Response) => {
   res.json(files);
 });
 
-router.get("/services/:id/logs/:filename", (req: Request, res: Response) => {
+router.get("/shells/:id/logs/:filename", (req: Request, res: Response) => {
   const { id, filename } = req.params;
   // prevent path traversal
   if (filename.includes("/") || filename.includes("..")) { res.status(400).end(); return; }

@@ -3,8 +3,8 @@
   import type { LogEntry } from "../lib/types";
   import { FileText, FileArchive, RefreshCw } from "@lucide/svelte";
 
-  let { serviceId, onopen }: {
-    serviceId: string;
+  let { shellId, onopen }: {
+    shellId: string;
     onopen: (filename: string) => void;
   } = $props();
 
@@ -16,7 +16,7 @@
     loading = true;
     error = "";
     try {
-      const res = await fetch(`/api/services/${serviceId}/logs`);
+      const res = await fetch(`/api/shells/${shellId}/logs`);
       logs = await res.json();
     } catch {
       error = "Failed to load logs.";
