@@ -9,6 +9,7 @@
   let content = $state("");
   let loading = $state(true);
   let error = $state("");
+  let truncated = $state(false);
   let container: HTMLPreElement;
 
   onMount(async () => {
@@ -17,6 +18,7 @@
     try {
       const res = await fetch(`/api/shells/${shellId}/logs/${encodeURIComponent(filename)}`);
       if (!res.ok) { error = `Failed to load: ${res.status}`; return; }
+      truncated = res.headers.get("X-Truncated") === "true";
       content = await res.text();
     } catch {
       error = "Failed to load log file.";
@@ -38,6 +40,9 @@
   {:else if error}
     <div class="empty error">{error}</div>
   {:else}
+    {#if truncated}
+      <div class="truncation-notice">Showing last 5,000 lines — download for the full file</div>
+    {/if}
     <pre class="content" bind:this={container}>{content}</pre>
   {/if}
 </div>
@@ -58,6 +63,15 @@
   }
 
   .empty.error { color: #ff8585; }
+
+  .truncation-notice {
+    font-size: 0.75rem;
+    color: #4a4a62;
+    background: #111114;
+    border-bottom: 1px solid #1e1e24;
+    padding: 6px 24px;
+    flex-shrink: 0;
+  }
 
   .content {
     flex: 1;

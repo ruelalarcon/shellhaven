@@ -70,19 +70,60 @@ router.get("/shells/:id/logs", (req: Request, res: Response) => {
   res.json(files);
 });
 
-router.get("/shells/:id/logs/:filename", (req: Request, res: Response) => {
+const LOG_TAIL_LINES = 5000;
+
+function validateLogFilename(filename: string): boolean {
+  return !filename.includes("/") && !filename.includes("..");
+}
+
+router.get("/shells/:id/logs/:filename/download", (req: Request, res: Response) => {
   const { id, filename } = req.params;
-  // prevent path traversal
-  if (filename.includes("/") || filename.includes("..")) { res.status(400).end(); return; }
+  if (!validateLogFilename(filename)) { res.status(400).end(); return; }
 
   const filepath = path.join(LOGS_DIR, id, filename);
   if (!fs.existsSync(filepath)) { res.status(404).end(); return; }
 
+  const mime = filename.endsWith(".gz") ? "application/gzip" : "text/plain; charset=utf-8";
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Content-Type", mime);
+  fs.createReadStream(filepath).pipe(res);
+});
+
+router.get("/shells/:id/logs/:filename", (req: Request, res: Response) => {
+  const { id, filename } = req.params;
+  if (!validateLogFilename(filename)) { res.status(400).end(); return; }
+
+  const filepath = path.join(LOGS_DIR, id, filename);
+  if (!fs.existsSync(filepath)) { res.status(404).end(); return; }
+
+  res.setHeader("Content-Type", "text/plain; charset=utf-8");
+
   if (filename.endsWith(".gz")) {
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    fs.createReadStream(filepath).pipe(zlib.createGunzip()).pipe(res);
+    const lines: string[] = [];
+    let remainder = "";
+
+    const gunzip = zlib.createGunzip();
+    const src = fs.createReadStream(filepath);
+
+    gunzip.on("data", (chunk: Buffer) => {
+      const text = remainder + chunk.toString("utf8");
+      const parts = text.split("\n");
+      remainder = parts.pop()!;
+      lines.push(...parts);
+      if (lines.length > LOG_TAIL_LINES * 2) lines.splice(0, lines.length - LOG_TAIL_LINES);
+    });
+
+    gunzip.on("end", () => {
+      if (remainder) lines.push(remainder);
+      const truncated = lines.length > LOG_TAIL_LINES;
+      const tail = truncated ? lines.slice(-LOG_TAIL_LINES) : lines;
+      if (truncated) res.setHeader("X-Truncated", "true");
+      res.end(tail.join("\n"));
+    });
+
+    gunzip.on("error", () => res.status(500).end());
+    src.pipe(gunzip);
   } else {
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
     fs.createReadStream(filepath).pipe(res);
   }
 });

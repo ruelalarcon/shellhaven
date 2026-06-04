@@ -37,7 +37,7 @@
   let isManagedShell = $derived(selectedId !== "shell" && selectedId !== "btop");
 
   function downloadUrl(filename: string): string {
-    return `/api/shells/${selectedId}/logs/${encodeURIComponent(filename)}`;
+    return `/api/shells/${selectedId}/logs/${encodeURIComponent(filename)}/download`;
   }
 </script>
 
