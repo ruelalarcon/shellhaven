@@ -10,13 +10,15 @@
   let container: HTMLDivElement;
   let term: XTerm;
   let fitAddon: FitAddon;
+  let disposed = false;
 
   onMount(() => {
     term = new XTerm({
-      fontFamily: '"CaskaydiaMonoNerdFontMono", ui-monospace, monospace',
+      fontFamily: 'ui-monospace, monospace',
       fontSize: 14,
-      lineHeight: 1.35,
-      letterSpacing: 0.3,
+      // Box-drawing characters need contiguous cells in every terminal tab.
+      lineHeight: 1,
+      letterSpacing: 0,
       theme: {
         background: "#0d0d0f",
         foreground: "#c9d1e0",
@@ -48,7 +50,18 @@
     fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(container);
-    fitAddon.fit();
+    fitAndResize();
+
+    // Start with a usable fallback, then make xterm measure the loaded font.
+    // Loading a web font alone does not update xterm's cached cell dimensions.
+    Promise.all([
+      document.fonts.load('14px "CaskaydiaMonoNerdFontMono"'),
+      document.fonts.load('bold 14px "CaskaydiaMonoNerdFontMono"'),
+    ]).then(() => {
+      if (disposed) return;
+      term.options.fontFamily = '"CaskaydiaMonoNerdFontMono", ui-monospace, monospace';
+      fitAndResize();
+    }).catch(() => { /* Keep the fallback if the font is unavailable. */ });
 
     term.onData((data: string) => {
       send({ type: "input", id, data });
@@ -69,7 +82,8 @@
         if (!scrollbackReceived) {
           scrollbackReceived = true;
           term.write(msg.data, () => {
-            fitAddon?.fit();
+            if (disposed) return;
+            fitAndResize();
             term.scrollToBottom();
           });
         } else {
@@ -91,6 +105,7 @@
     ro.observe(container);
 
     return () => {
+      disposed = true;
       removeMsg();
       removeOpen();
       ro.disconnect();
@@ -100,16 +115,18 @@
 
   $effect(() => {
     if (visible && fitAddon) {
-      setTimeout(() => {
+      const frame = requestAnimationFrame(() => {
         fitAndResize();
         term?.scrollToBottom();
         term?.focus();
-      }, 10);
+      });
+      return () => cancelAnimationFrame(frame);
     }
   });
 
   function fitAndResize() {
-    if (!fitAddon || !term) return;
+    if (!fitAddon || !term || disposed || !visible ||
+        !container.clientWidth || !container.clientHeight) return;
     fitAddon.fit();
     send({ type: "resize", id, cols: term.cols, rows: term.rows });
   }
