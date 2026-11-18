@@ -41,7 +41,7 @@
     {/if}
     <form onsubmit={submit}>
       <label for="password">Password</label>
-      <input id="password" type="password" bind:value={password} autofocus required />
+      <input id="password" type="password" bind:value={password} required />
       <label for="confirm">Confirm Password</label>
       <input id="confirm" type="password" bind:value={confirm} required />
       <button type="submit" disabled={loading}>

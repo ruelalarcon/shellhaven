@@ -70,7 +70,14 @@
   </div>
 
   <!-- Sidebar drawer backdrop -->
-  <div class="backdrop" class:visible={sidebarOpen} onclick={() => (sidebarOpen = false)}></div>
+  <button
+    type="button"
+    class="backdrop"
+    class:visible={sidebarOpen}
+    aria-label="Close sidebar"
+    disabled={!sidebarOpen}
+    onclick={() => (sidebarOpen = false)}
+  ></button>
 
   <div class="layout">
     <div class="sidebar-wrap" class:open={sidebarOpen}>
@@ -157,6 +164,8 @@
 
   /* Backdrop */
   .backdrop {
+    border: 0;
+    padding: 0;
     display: none;
     position: fixed;
     inset: 0;

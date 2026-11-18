@@ -40,7 +40,7 @@
     {/if}
     <form onsubmit={submit}>
       <label for="password">Password</label>
-      <input id="password" type="password" bind:value={password} autofocus required />
+      <input id="password" type="password" bind:value={password} required />
       <button type="submit" disabled={loading}>
         {loading ? "logging in…" : "login"}
       </button>
