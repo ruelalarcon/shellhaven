@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
-    "start": "node dist/server/src/index.js"
+    "start": "node dist/server/src/index.js",
+    "cli": "tsx src/cli.ts",
+    "test:cli": "tsx --test test/cli.test.ts"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

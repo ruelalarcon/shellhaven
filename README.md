@@ -20,6 +20,7 @@ Unlike simple log viewers, shellhaven gives you full shell input through the bro
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [First Run](#first-run)
+- [Command Line](#command-line)
 - [Creating Shells](#creating-shells)
   - [Basic Example](#basic-example)
   - [Script Directives](#script-directives)
@@ -93,6 +94,35 @@ On first visit you will be taken to the **setup page** where you create a passwo
 For running shellhaven as a persistent background service that starts on boot, see [systemd Service](#systemd-service).
 
 ---
+
+## Command Line
+
+Control a running Shellhaven instance from the terminal without logging in. Run commands as the same OS user that runs the server, after completing initial web setup.
+
+From the repository, no global install is needed:
+
+```bash
+npm run cli -- list
+npm run cli -- restart api
+```
+
+To install the `shellhaven` command on your PATH, run these from the repository:
+
+```bash
+npm run build
+npm link
+shellhaven list
+shellhaven restart api
+shellhaven stop worker
+shellhaven start worker
+shellhaven start-all
+shellhaven stop-all
+shellhaven rescan
+```
+
+Names are script filenames without `.sh`. Use `shellhaven help` for usage. Commands return a nonzero exit code on failure; successful control commands report acceptance, not application readiness. They use the same lifecycle and restart policies as the website.
+
+The CLI reads `~/.config/shellhaven/config.json` and creates a 30-second authentication token for each request. No password prompt or saved session cookie is needed; the HTTP API still requires authentication. The server must already be running. If it uses a different host or port, supply the same `SHELLHAVEN_HOST` / `SHELLHAVEN_PORT` environment variables to the CLI (`0.0.0.0` and `::` are mapped to loopback addresses).
 
 ## Creating Shells
 
