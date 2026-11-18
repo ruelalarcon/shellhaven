@@ -10,7 +10,7 @@
   let loading = $state(true);
   let error = $state("");
   let truncated = $state(false);
-  let container: HTMLPreElement;
+  let container = $state<HTMLPreElement>();
 
   onMount(async () => {
     loading = true;
